@@ -29,15 +29,14 @@ export const uploadDocument = async (documentData: UploadDocumentProps) => {
     const fileName = `${Date.now()}_${documentData.referenceNumber}.${fileExt}`;
     const filePath = `${documentData.categoryId}/${fileName}`;
     
-    // S'assurer que le bucket "documents" existe
-    const { data: buckets } = await supabase.storage.listBuckets();
-    if (!buckets?.find(bucket => bucket.name === 'documents')) {
-      await supabase.storage.createBucket('documents', {
-        public: false,
-      });
-    }
+    console.log("Début de l'upload du fichier", {
+      bucket: 'documents',
+      path: filePath,
+      fileSize: documentData.file.size,
+      fileType: documentData.file.type
+    });
     
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError, data: uploadData } = await supabase.storage
       .from('documents')
       .upload(filePath, documentData.file, {
         cacheControl: '3600',
@@ -48,6 +47,8 @@ export const uploadDocument = async (documentData: UploadDocumentProps) => {
       console.error("Erreur d'upload:", uploadError);
       throw new Error(`Erreur lors de l'upload du fichier: ${uploadError.message}`);
     }
+
+    console.log("Fichier uploadé avec succès:", uploadData);
 
     // 2. Enregistrer les métadonnées du document dans la base de données
     const { data, error } = await supabase.from('documents').insert({
