@@ -52,6 +52,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+                ministry: {
+                    blue: '#4A9BDB', // Couleur principale du logo
+                    lightBlue: '#C7E1F5', // Version plus claire
+                    darkBlue: '#1A5B8F', // Version plus foncée
+                    gold: '#F8B93B', // Couleur dorée du soleil
+                    white: '#FFFFFF'
+                },
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
