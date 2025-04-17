@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,43 +20,50 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, FileUp, XCircle } from "lucide-react";
+import { Check, FileUp, XCircle, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { uploadDocument, getDocumentCategories } from "@/services/documentService";
+import { toast } from "sonner";
+
+interface CategoryType {
+  id: string;
+  name: string;
+  description: string;
+}
 
 export default function Upload() {
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedType, setSelectedType] = useState("");
+  const [categories, setCategories] = useState<CategoryType[]>([]);
   const [isPublicMarket, setIsPublicMarket] = useState(false);
   const [fileSelected, setFileSelected] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Options de catégories
-  const categories = [
-    {
-      value: "administrative",
-      label: "Documents administratifs et réglementaires",
-    },
-    {
-      value: "technical",
-      label: "Documents techniques et spécialisés",
-    },
-    {
-      value: "financial",
-      label: "Documents financiers et comptables",
-    },
-    {
-      value: "communication",
-      label: "Documents de communication et de sensibilisation",
-    },
-    {
-      value: "historical",
-      label: "Archives et documentation historique",
-    },
-  ];
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm();
+
+  const selectedCategory = watch("categoryId");
+  const selectedType = watch("documentType");
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await getDocumentCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des catégories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    setIsPublicMarket(selectedType === "Marché public" || selectedType === "Contrat");
+  }, [selectedType]);
 
   // Types de documents par catégorie
   const documentTypes = {
-    administrative: [
+    "Documents administratifs et réglementaires": [
       "Loi",
       "Décret",
       "Arrêté",
@@ -67,21 +75,21 @@ export default function Upload() {
       "Rapport d'activité",
       "Compte rendu",
     ],
-    technical: [
+    "Documents techniques et spécialisés": [
       "Étude",
       "Recherche",
       "Guide méthodologique",
       "Données statistiques",
       "Rapport d'enquête",
     ],
-    financial: [
+    "Documents financiers et comptables": [
       "Budget",
       "État financier",
       "Rapport d'audit",
       "Marché public",
       "Contrat",
     ],
-    communication: [
+    "Documents de communication et de sensibilisation": [
       "Bulletin",
       "Revue spécialisée",
       "Plaquette",
@@ -89,7 +97,7 @@ export default function Upload() {
       "Acte de conférence",
       "Acte de séminaire",
     ],
-    historical: [
+    "Archives et documentation historique": [
       "Document ancien",
       "Correspondance",
       "Dossier administratif ancien",
@@ -104,31 +112,52 @@ export default function Upload() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
       setFileSelected(true);
-      setFileName(e.target.files[0].name);
+      setFileName(file.name);
+      setSelectedFile(file);
     } else {
       setFileSelected(false);
       setFileName("");
+      setSelectedFile(null);
+    }
+  };
+
+  const onSubmit = async (data: any) => {
+    if (!selectedFile) {
+      toast.error("Veuillez sélectionner un fichier");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      await uploadDocument({
+        ...data,
+        file: selectedFile,
+      });
+      
+      toast.success("Document archivé avec succès");
+      reset();
+      setFileSelected(false);
+      setFileName("");
+      setSelectedFile(null);
+    } catch (error) {
+      console.error("Erreur lors de l'upload:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
-    setSelectedType("");
-    setIsPublicMarket(
-      value === "financial" && documentTypes.financial.includes("Marché public")
-    );
+    setValue("categoryId", value);
+    setValue("documentType", "");
   };
 
-  const handleTypeChange = (value: string) => {
-    setSelectedType(value);
-    setIsPublicMarket(value === "Marché public" || value === "Contrat");
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Logique de soumission du formulaire (à implémenter avec backend)
-    alert("Document envoyé avec succès!");
+  const getDocumentTypeOptions = () => {
+    const selectedCategoryObj = categories.find(cat => cat.id === selectedCategory);
+    if (!selectedCategoryObj) return [];
+    
+    return documentTypes[selectedCategoryObj.name as keyof typeof documentTypes] || [];
   };
 
   return (
@@ -136,7 +165,7 @@ export default function Upload() {
       <div className="max-w-4xl mx-auto">
         <h1 className="section-title">Ajouter un document</h1>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <Card className="mb-6 border-ministry-blue/20">
             <CardHeader>
               <CardTitle>Informations du document</CardTitle>
@@ -148,68 +177,94 @@ export default function Upload() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Intitulé du dossier</Label>
-                  <Input id="title" placeholder="Ex: Arrêté N°2023-1567" required />
+                  <Input 
+                    id="title" 
+                    placeholder="Ex: Arrêté N°2023-1567" 
+                    {...register("title", { required: true })}
+                    className={errors.title ? "border-destructive" : ""}
+                  />
+                  {errors.title && (
+                    <p className="text-sm text-destructive">Ce champ est requis</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="reference">Numéro de référence</Label>
-                  <Input id="reference" placeholder="Ex: REF-2023-0456" required />
+                  <Label htmlFor="referenceNumber">Numéro de référence</Label>
+                  <Input 
+                    id="referenceNumber" 
+                    placeholder="Ex: REF-2023-0456" 
+                    {...register("referenceNumber", { required: true })}
+                    className={errors.referenceNumber ? "border-destructive" : ""}
+                  />
+                  {errors.referenceNumber && (
+                    <p className="text-sm text-destructive">Ce champ est requis</p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="document-date">Date du document</Label>
-                  <Input id="document-date" type="date" required />
+                  <Label htmlFor="documentDate">Date du document</Label>
+                  <Input 
+                    id="documentDate" 
+                    type="date" 
+                    {...register("documentDate", { required: true })}
+                    className={errors.documentDate ? "border-destructive" : ""}
+                  />
+                  {errors.documentDate && (
+                    <p className="text-sm text-destructive">Ce champ est requis</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="source">Service émetteur</Label>
-                  <Input id="source" placeholder="Ex: Direction des Ressources Animales" />
+                  <Label htmlFor="issuingDepartment">Service émetteur</Label>
+                  <Input 
+                    id="issuingDepartment" 
+                    placeholder="Ex: Direction des Ressources Animales" 
+                    {...register("issuingDepartment")}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Catégorie de document</Label>
-                  <Select
-                    onValueChange={handleCategoryChange}
-                    value={selectedCategory}
-                    required
-                  >
-                    <SelectTrigger id="category">
+                  <Label htmlFor="categoryId">Catégorie de document</Label>
+                  <Select onValueChange={handleCategoryChange} value={selectedCategory}>
+                    <SelectTrigger id="categoryId" className={errors.categoryId ? "border-destructive" : ""}>
                       <SelectValue placeholder="Sélectionner une catégorie" />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.categoryId && (
+                    <p className="text-sm text-destructive">Ce champ est requis</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="document-type">Type de document</Label>
-                  <Select
-                    onValueChange={handleTypeChange}
+                  <Label htmlFor="documentType">Type de document</Label>
+                  <Select 
+                    onValueChange={(value) => setValue("documentType", value)} 
                     value={selectedType}
                     disabled={!selectedCategory}
-                    required
                   >
-                    <SelectTrigger id="document-type">
+                    <SelectTrigger id="documentType" className={errors.documentType ? "border-destructive" : ""}>
                       <SelectValue placeholder="Sélectionner un type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {selectedCategory &&
-                        documentTypes[
-                          selectedCategory as keyof typeof documentTypes
-                        ].map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
+                      {getDocumentTypeOptions().map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  {errors.documentType && (
+                    <p className="text-sm text-destructive">Ce champ est requis</p>
+                  )}
                 </div>
               </div>
 
@@ -219,6 +274,7 @@ export default function Upload() {
                   id="description"
                   placeholder="Brève description du contenu du document"
                   rows={3}
+                  {...register("description")}
                 />
               </div>
 
@@ -230,17 +286,17 @@ export default function Upload() {
                   <Separator className="my-3" />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="fiscal-year">Exercice Budgétaire</Label>
-                      <Input id="fiscal-year" placeholder="Ex: 2023" required />
+                      <Label htmlFor="budgetYear">Exercice Budgétaire</Label>
+                      <Input id="budgetYear" placeholder="Ex: 2023" {...register("budgetYear")} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="budget-program">Programme budgétaire</Label>
-                      <Input id="budget-program" placeholder="Ex: 822/1.037" required />
+                      <Label htmlFor="budgetProgram">Programme budgétaire</Label>
+                      <Input id="budgetProgram" placeholder="Ex: 822/1.037" {...register("budgetProgram")} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="market-type">Type de marché</Label>
-                      <Select required>
-                        <SelectTrigger id="market-type">
+                      <Label htmlFor="marketType">Type de marché</Label>
+                      <Select onValueChange={(value) => setValue("marketType", value)}>
+                        <SelectTrigger id="marketType">
                           <SelectValue placeholder="Sélectionner" />
                         </SelectTrigger>
                         <SelectContent>
@@ -283,7 +339,6 @@ export default function Upload() {
                     className="hidden"
                     onChange={handleFileChange}
                     accept=".pdf,.docx,.xlsx,.pptx,.jpg,.jpeg,.png"
-                    required
                   />
                 </div>
               </div>
@@ -297,7 +352,12 @@ export default function Upload() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setFileSelected(false)}
+                    onClick={() => {
+                      setFileSelected(false);
+                      setFileName("");
+                      setSelectedFile(null);
+                    }}
+                    type="button"
                   >
                     <XCircle className="h-5 w-5 text-muted-foreground" />
                   </Button>
@@ -305,8 +365,21 @@ export default function Upload() {
               )}
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline">Annuler</Button>
-              <Button type="submit">Archiver le document</Button>
+              <Button variant="outline" type="button" onClick={() => reset()}>Annuler</Button>
+              <Button 
+                type="submit" 
+                disabled={isUploading || !fileSelected}
+                className="bg-ministry-blue hover:bg-ministry-darkBlue"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Archivage en cours...
+                  </>
+                ) : (
+                  "Archiver le document"
+                )}
+              </Button>
             </CardFooter>
           </Card>
         </form>

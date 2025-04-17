@@ -9,16 +9,205 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      document_categories: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      document_tags: {
+        Row: {
+          document_id: string
+          id: string
+          tag: string
+        }
+        Insert: {
+          document_id: string
+          id?: string
+          tag: string
+        }
+        Update: {
+          document_id?: string
+          id?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_tags_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          budget_program: string | null
+          budget_year: string | null
+          category_id: string
+          description: string | null
+          document_date: string
+          document_type: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          issuing_department: string | null
+          last_modified: string
+          market_type: Database["public"]["Enums"]["market_type"] | null
+          modified_by: string | null
+          reference_number: string
+          status: Database["public"]["Enums"]["document_status"] | null
+          title: string
+          upload_date: string
+          uploaded_by: string
+        }
+        Insert: {
+          budget_program?: string | null
+          budget_year?: string | null
+          category_id: string
+          description?: string | null
+          document_date: string
+          document_type: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          issuing_department?: string | null
+          last_modified?: string
+          market_type?: Database["public"]["Enums"]["market_type"] | null
+          modified_by?: string | null
+          reference_number: string
+          status?: Database["public"]["Enums"]["document_status"] | null
+          title: string
+          upload_date?: string
+          uploaded_by: string
+        }
+        Update: {
+          budget_program?: string | null
+          budget_year?: string | null
+          category_id?: string
+          description?: string | null
+          document_date?: string
+          document_type?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          issuing_department?: string | null
+          last_modified?: string
+          market_type?: Database["public"]["Enums"]["market_type"] | null
+          modified_by?: string | null
+          reference_number?: string
+          status?: Database["public"]["Enums"]["document_status"] | null
+          title?: string
+          upload_date?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          department: string | null
+          full_name: string | null
+          id: string
+          last_active: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          status: string | null
+        }
+        Insert: {
+          department?: string | null
+          full_name?: string | null
+          id: string
+          last_active?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: string | null
+        }
+        Update: {
+          department?: string | null
+          full_name?: string | null
+          id?: string
+          last_active?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: string | null
+        }
+        Relationships: []
+      }
+      user_actions: {
+        Row: {
+          action_type: string
+          details: Json | null
+          document_id: string | null
+          id: string
+          performed_at: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          details?: Json | null
+          document_id?: string | null
+          id?: string
+          performed_at?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          details?: Json | null
+          document_id?: string | null
+          id?: string
+          performed_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      user_has_role: {
+        Args: { required_role: Database["public"]["Enums"]["user_role"] }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      document_status: "actif" | "archivé"
+      market_type: "DC" | "DRPR" | "DRPO" | "AAO"
+      user_role: "admin" | "archiviste" | "utilisateur"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +322,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      document_status: ["actif", "archivé"],
+      market_type: ["DC", "DRPR", "DRPO", "AAO"],
+      user_role: ["admin", "archiviste", "utilisateur"],
+    },
   },
 } as const

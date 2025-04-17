@@ -3,9 +3,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import MainLayout from "@/components/layout/MainLayout";
+import { AuthProvider } from "@/context/AuthContext";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -28,22 +30,56 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            
-            {/* Routes avec MainLayout */}
-            <Route path="/" element={<MainLayout><Dashboard /></MainLayout>} />
-            <Route path="/archives" element={<MainLayout><Archives /></MainLayout>} />
-            <Route path="/documents" element={<MainLayout><Documents /></MainLayout>} />
-            <Route path="/upload" element={<MainLayout><Upload /></MainLayout>} />
-            <Route path="/search" element={<MainLayout><Search /></MainLayout>} />
-            <Route path="/stats" element={<MainLayout><Stats /></MainLayout>} />
-            <Route path="/users" element={<MainLayout><Users /></MainLayout>} />
-            <Route path="/admin" element={<MainLayout><Admin /></MainLayout>} />
-            
-            {/* Page 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              
+              {/* Routes protégées avec MainLayout */}
+              <Route path="/" element={
+                <AuthGuard>
+                  <MainLayout><Dashboard /></MainLayout>
+                </AuthGuard>
+              } />
+              <Route path="/archives" element={
+                <AuthGuard>
+                  <MainLayout><Archives /></MainLayout>
+                </AuthGuard>
+              } />
+              <Route path="/documents" element={
+                <AuthGuard>
+                  <MainLayout><Documents /></MainLayout>
+                </AuthGuard>
+              } />
+              <Route path="/upload" element={
+                <AuthGuard>
+                  <MainLayout><Upload /></MainLayout>
+                </AuthGuard>
+              } />
+              <Route path="/search" element={
+                <AuthGuard>
+                  <MainLayout><Search /></MainLayout>
+                </AuthGuard>
+              } />
+              <Route path="/stats" element={
+                <AuthGuard>
+                  <MainLayout><Stats /></MainLayout>
+                </AuthGuard>
+              } />
+              <Route path="/users" element={
+                <AuthGuard>
+                  <MainLayout><Users /></MainLayout>
+                </AuthGuard>
+              } />
+              <Route path="/admin" element={
+                <AuthGuard>
+                  <MainLayout><Admin /></MainLayout>
+                </AuthGuard>
+              } />
+              
+              {/* Page 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

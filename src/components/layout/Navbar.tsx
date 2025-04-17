@@ -1,5 +1,5 @@
 
-import { Bell, MenuIcon, Search, User } from "lucide-react";
+import { Bell, MenuIcon, Search, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -13,9 +13,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   return (
     <header className="bg-background border-b border-border px-4 py-3 sticky top-0 z-30">
@@ -56,7 +58,14 @@ export default function Navbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {user?.email && (
+                  <div className="flex flex-col">
+                    <span>{user.email}</span>
+                    <span className="text-xs text-muted-foreground mt-1">Utilisateur</span>
+                  </div>
+                )}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link to="/profile">Profil</Link>
@@ -65,8 +74,8 @@ export default function Navbar() {
                 <Link to="/settings">Paramètres</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/login">Déconnexion</Link>
+              <DropdownMenuItem onClick={() => signOut()} className="text-destructive focus:text-destructive">
+                <LogOut className="mr-2 h-4 w-4" /> Déconnexion
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
