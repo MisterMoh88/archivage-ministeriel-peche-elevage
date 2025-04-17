@@ -6,16 +6,39 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { EyeIcon, EyeOffIcon, LockIcon, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, isLoading } = useAuth();
+  const { signIn, isLoading, user } = useAuth();
+  const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    // Rediriger vers la page d'accueil si l'utilisateur est déjà connecté
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signIn(email, password);
+    setErrorMessage("");
+
+    if (!email || !password) {
+      setErrorMessage("Veuillez remplir tous les champs");
+      return;
+    }
+
+    try {
+      await signIn(email, password);
+    } catch (error: any) {
+      console.error("Login handler error:", error);
+      setErrorMessage(error.message || "Une erreur est survenue lors de la connexion");
+    }
   };
 
   return (
@@ -41,6 +64,12 @@ export default function Login() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {errorMessage && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md text-sm">
+                {errorMessage}
+              </div>
+            )}
+            
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -106,6 +135,12 @@ export default function Login() {
             </div>
             <div className="text-xs text-center text-gray-500 dark:text-gray-400 flex justify-center items-center gap-1">
               <LockIcon className="h-3 w-3" /> Accès sécurisé
+            </div>
+            {/* Information de connexion pour l'administrateur (à supprimer en production) */}
+            <div className="mt-4 p-2 border border-dashed border-gray-300 rounded text-xs text-gray-500">
+              <p className="font-semibold">Compte administrateur (temporaire):</p>
+              <p>Email: mahamadoutraorecp@yahoo.com</p>
+              <p>Mot de passe: Admin@2025</p>
             </div>
           </CardFooter>
         </Card>

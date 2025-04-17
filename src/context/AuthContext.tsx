@@ -22,8 +22,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("Initializing auth state");
+
     // Configurer l'écouteur d'état d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log("Auth state change event:", event);
+      
       setSession(newSession);
       setUser(newSession?.user ?? null);
       setIsLoading(false);
@@ -38,26 +42,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Vérifier la session existante
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setIsLoading(false);
-    });
+    const checkSession = async () => {
+      try {
+        console.log("Checking existing session");
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error.message);
+          toast.error("Erreur de récupération de session: " + error.message);
+        } else {
+          console.log("Session check result:", currentSession ? "Session active" : "No active session");
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+        }
+      } catch (err) {
+        console.error("Unexpected error checking session:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkSession();
 
     return () => {
+      console.log("Cleaning up auth subscription");
       subscription.unsubscribe();
     };
   }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log("Attempting sign in for:", email);
       setIsLoading(true);
+      
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
+        console.error("Sign in error:", error.message);
         toast.error(error.message);
+      } else {
+        console.log("Sign in successful");
       }
     } catch (error: any) {
+      console.error("Unexpected sign in error:", error);
       toast.error(error.message || "Une erreur est survenue lors de la connexion");
     } finally {
       setIsLoading(false);
@@ -66,13 +93,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      console.log("Attempting sign out");
       setIsLoading(true);
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error("Sign out error:", error.message);
         toast.error(error.message);
+      } else {
+        console.log("Sign out successful");
       }
     } catch (error: any) {
+      console.error("Unexpected sign out error:", error);
       toast.error(error.message || "Une erreur est survenue lors de la déconnexion");
     } finally {
       setIsLoading(false);
