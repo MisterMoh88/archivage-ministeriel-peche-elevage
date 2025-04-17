@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { User } from "@supabase/supabase-js";
 
 interface UploadDocumentProps {
   title: string;
@@ -13,12 +14,12 @@ interface UploadDocumentProps {
   file: File;
   budgetYear?: string;
   budgetProgram?: string;
-  marketType?: string;
+  marketType?: "DC" | "DRPR" | "DRPO" | "AAO"; // Use enum type directly
 }
 
 export const uploadDocument = async (documentData: UploadDocumentProps) => {
   try {
-    const user = supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       throw new Error("Utilisateur non authentifié");
     }
@@ -63,6 +64,7 @@ export const uploadDocument = async (documentData: UploadDocumentProps) => {
       budget_year: documentData.budgetYear,
       budget_program: documentData.budgetProgram,
       market_type: documentData.marketType,
+      uploaded_by: user.id
     }).select().single();
 
     if (error) {
