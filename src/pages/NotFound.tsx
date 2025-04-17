@@ -9,8 +9,8 @@ export default function NotFound() {
       <div className="w-full max-w-md text-center space-y-6">
         <div className="flex justify-center">
           <img 
-            src="/lovable-uploads/logo.png" 
-            alt="Logo Ministère" 
+            src="/lovable-uploads/a0142a7c-c258-4bbc-bc33-eb26a36b0e8d.png" 
+            alt="Logo République du Mali" 
             className="h-20 w-20" 
           />
         </div>

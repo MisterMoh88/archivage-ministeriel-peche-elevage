@@ -105,8 +105,8 @@ export default function Sidebar() {
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-sidebar-border bg-sidebar p-4">
         <div className="flex items-center gap-2">
           <img 
-            src="/lovable-uploads/logo.png" 
-            alt="Logo Ministère" 
+            src="/lovable-uploads/a0142a7c-c258-4bbc-bc33-eb26a36b0e8d.png" 
+            alt="Logo République du Mali" 
             className="h-8 w-8 rounded-full" 
           />
           {!isCollapsed && (

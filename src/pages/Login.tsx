@@ -23,7 +23,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <div className="flex flex-col items-center">
-            <img src="/lovable-uploads/logo.png" alt="Logo Ministère" className="h-24 w-24" />
+            <img src="/lovable-uploads/a0142a7c-c258-4bbc-bc33-eb26a36b0e8d.png" alt="Logo République du Mali" className="h-24 w-24" />
             <h1 className="mt-4 text-2xl font-bold text-ministry-darkBlue dark:text-white text-center">
               Système d'Archivage Électronique
             </h1>
