@@ -203,7 +203,7 @@ export const getDocumentHistory = async (documentId: string) => {
       .from('user_actions')
       .select(`
         *,
-        profiles:user_id(full_name)
+        profiles:user_id (full_name)
       `)
       .eq('document_id', documentId)
       .order('performed_at', { ascending: false });
@@ -215,7 +215,7 @@ export const getDocumentHistory = async (documentId: string) => {
     // Format the data to include user fullname
     return data.map(action => ({
       ...action,
-      user_fullname: action.profiles ? action.profiles.full_name : undefined
+      user_fullname: action.profiles?.full_name
     }));
   } catch (error: any) {
     console.error("Erreur lors de la récupération de l'historique:", error);

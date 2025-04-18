@@ -1,34 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, ArrowUpDown } from "lucide-react";
-import { getDocuments, getDocumentCategories } from "@/services/documentService";
 import { useQuery } from "@tanstack/react-query";
-import { Document } from "@/types/document";
+import { getDocuments, getDocumentCategories } from "@/services/documentService";
 import { DocumentSearchBar } from "@/components/documents/DocumentSearchBar";
-import { DocumentTableRow } from "@/components/documents/DocumentTableRow";
+import { DocumentCategoryTabs } from "@/components/documents/DocumentCategoryTabs";
+import { DocumentsTable } from "@/components/documents/DocumentsTable";
+import { Document } from "@/types/document";
 
 export default function Documents() {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -108,11 +85,6 @@ export default function Documents() {
     }
   };
 
-  // Handle document changes (edit, delete, etc.)
-  const handleDocumentChange = () => {
-    refetch();
-  };
-
   if (error) {
     return (
       <div className="page-container">
@@ -138,112 +110,21 @@ export default function Documents() {
         onSearchChange={setSearchQuery}
       />
 
-      <Tabs 
-        defaultValue="all" 
-        className="space-y-4"
-        value={selectedCategory}
-        onValueChange={setSelectedCategory}
+      <DocumentCategoryTabs
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
       >
-        <TabsList>
-          <TabsTrigger value="all">Tous</TabsTrigger>
-          {categories.map(category => (
-            <TabsTrigger 
-              key={category.id} 
-              value={category.id}
-            >
-              {category.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value={selectedCategory} className="space-y-4">
-          <Card>
-            <CardHeader className="p-4">
-              <CardTitle className="text-lg">
-                Liste des documents ({isLoading ? '...' : filteredAndSortedDocuments().length})
-              </CardTitle>
-              <CardDescription>
-                Consultez et gérez les documents archivés
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="flex justify-center items-center p-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-ministry-blue" />
-                  <span className="ml-2">Chargement des documents...</span>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[30px]">
-                        <Checkbox />
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer"
-                        onClick={() => handleSort("title")}
-                      >
-                        <div className="flex items-center gap-1">
-                          Titre
-                          <ArrowUpDown className="h-4 w-4" />
-                        </div>
-                      </TableHead>
-                      <TableHead>Catégorie</TableHead>
-                      <TableHead 
-                        className="cursor-pointer"
-                        onClick={() => handleSort("type")}
-                      >
-                        <div className="flex items-center gap-1">
-                          Type
-                          <ArrowUpDown className="h-4 w-4" />
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer"
-                        onClick={() => handleSort("date")}
-                      >
-                        <div className="flex items-center gap-1">
-                          Date
-                          <ArrowUpDown className="h-4 w-4" />
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer"
-                        onClick={() => handleSort("reference")}
-                      >
-                        <div className="flex items-center gap-1">
-                          Référence
-                          <ArrowUpDown className="h-4 w-4" />
-                        </div>
-                      </TableHead>
-                      <TableHead>Format</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAndSortedDocuments().length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-10">
-                          <p className="text-muted-foreground">Aucun document trouvé</p>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredAndSortedDocuments().map((doc) => (
-                        <DocumentTableRow 
-                          key={doc.id} 
-                          document={doc}
-                          categories={categories}
-                          onDocumentChange={handleDocumentChange}
-                        />
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        <DocumentsTable 
+          documents={filteredAndSortedDocuments()}
+          isLoading={isLoading}
+          categories={categories}
+          onDocumentChange={refetch}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+        />
+      </DocumentCategoryTabs>
     </div>
   );
 }
