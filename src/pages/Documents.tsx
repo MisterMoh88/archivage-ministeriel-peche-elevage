@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,122 +40,207 @@ import {
 } from "@/components/ui/tabs";
 import {
   FileText,
+  FilePdf,
+  FileImage,
+  FileSpreadsheet,
+  FileArchive,
   Eye,
   Download,
   MoreVertical,
   Search,
   Filter,
   ArrowUpDown,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getDocuments, getDocumentCategories } from "@/services/documentService";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { toast } from "sonner";
+
+// Interface pour les documents
+interface Document {
+  id: string;
+  title: string;
+  reference_number: string;
+  document_date: string;
+  document_type: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  document_categories: {
+    name: string;
+    description: string;
+  };
+  category_id: string;
+}
 
 export default function Documents() {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
 
-  // Données fictives pour la démonstration
-  const documents = [
-    {
-      id: "DOC-2023-0001",
-      title: "Arrêté ministériel N°2023-1567",
-      category: "Documents administratifs",
-      type: "Arrêté",
-      date: "23/04/2023",
-      source: "Cabinet du Ministre",
-      reference: "ARR-2023-1567",
-      fileType: "PDF",
-      fileSize: "2.4 MB",
-    },
-    {
-      id: "DOC-2023-0002",
-      title: "Rapport d'étude sur l'aquaculture au Mali",
-      category: "Documents techniques",
-      type: "Rapport",
-      date: "15/04/2023",
-      source: "Direction Nationale de la Pêche",
-      reference: "RAP-2023-0089",
-      fileType: "PDF",
-      fileSize: "8.7 MB",
-    },
-    {
-      id: "DOC-2023-0003",
-      title: "Budget prévisionnel 2024 - Secteur Élevage",
-      category: "Documents financiers",
-      type: "Budget",
-      date: "10/04/2023",
-      source: "Direction Administrative et Financière",
-      reference: "BUD-2024-0001",
-      fileType: "XLSX",
-      fileSize: "1.2 MB",
-    },
-    {
-      id: "DOC-2023-0004",
-      title: "Campagne de vaccination du bétail 2023",
-      category: "Documents de communication",
-      type: "Brochure",
-      date: "05/04/2023",
-      source: "Service Communication",
-      reference: "COM-2023-0045",
-      fileType: "PDF",
-      fileSize: "4.5 MB",
-    },
-    {
-      id: "DOC-2023-0005",
-      title: "Correspondance historique - Création du Ministère (1995)",
-      category: "Archives historiques",
-      type: "Correspondance",
-      date: "01/04/2023",
-      source: "Archives Nationales",
-      reference: "HIST-1995-0012",
-      fileType: "PDF",
-      fileSize: "3.1 MB",
-    },
-    {
-      id: "DOC-2023-0006",
-      title: "Contrat de fourniture d'équipements vétérinaires",
-      category: "Documents financiers",
-      type: "Marché public",
-      date: "28/03/2023",
-      source: "Direction des Marchés Publics",
-      reference: "MP-2023-0078",
-      fileType: "PDF",
-      fileSize: "6.2 MB",
-      budgetProgram: "822/1.037",
-      marketType: "AAO",
-    },
-  ];
-
-  // Fonction pour trier les documents
-  const sortedDocuments = [...documents].sort((a, b) => {
-    if (!sortColumn) return 0;
-    
-    const direction = sortDirection === "asc" ? 1 : -1;
-    
-    if (sortColumn === "title") {
-      return a.title.localeCompare(b.title) * direction;
-    } else if (sortColumn === "date") {
-      return new Date(a.date.split('/').reverse().join('-')).getTime() - 
-             new Date(b.date.split('/').reverse().join('-')).getTime() * direction;
-    } else if (sortColumn === "type") {
-      return a.type.localeCompare(b.type) * direction;
-    } else if (sortColumn === "reference") {
-      return a.reference.localeCompare(b.reference) * direction;
-    }
-    
-    return 0;
+  // Récupération des documents
+  const { data: documents, isLoading, error, refetch } = useQuery({
+    queryKey: ["documents"],
+    queryFn: getDocuments,
   });
 
-  // Filtrage par catégorie
-  const filteredDocuments = selectedCategory === "all" 
-    ? sortedDocuments 
-    : sortedDocuments.filter(doc => {
-        const category = doc.category.toLowerCase().replace(/\s+/g, '-');
-        return category === selectedCategory;
-      });
+  // Récupération des catégories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await getDocumentCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des catégories:", error);
+      }
+    };
 
-  // Fonction pour gérer le tri
+    fetchCategories();
+  }, []);
+
+  // Fonction pour obtenir l'icône de fichier en fonction du type
+  const getFileIcon = (fileType: string) => {
+    const type = fileType?.toLowerCase() || "";
+    if (type.includes("pdf")) return <FilePdf className="h-4 w-4 text-ministry-blue" />;
+    if (type.includes("image") || type.includes("jpg") || type.includes("png")) 
+      return <FileImage className="h-4 w-4 text-ministry-blue" />;
+    if (type.includes("sheet") || type.includes("excel") || type.includes("xlsx")) 
+      return <FileSpreadsheet className="h-4 w-4 text-ministry-blue" />;
+    if (type.includes("zip") || type.includes("rar")) 
+      return <FileArchive className="h-4 w-4 text-ministry-blue" />;
+    return <FileText className="h-4 w-4 text-ministry-blue" />;
+  };
+
+  // Formatage de la taille du fichier
+  const formatFileSize = (bytes: number) => {
+    if (!bytes) return "N/A";
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+    
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+    
+    return `${size.toFixed(1)} ${units[unitIndex]}`;
+  };
+
+  // Formatage de la date
+  const formatDate = (dateString: string) => {
+    try {
+      if (!dateString) return "N/A";
+      const date = new Date(dateString);
+      return format(date, 'dd/MM/yyyy', { locale: fr });
+    } catch (error) {
+      return dateString || "N/A";
+    }
+  };
+
+  // Téléchargement du document
+  const handleDownload = async (filePath: string, title: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .download(filePath);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Créer un URL pour le fichier téléchargé
+      const url = URL.createObjectURL(data);
+      
+      // Créer un lien temporaire pour le téléchargement
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = title || 'document';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Nettoyer
+      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      
+      toast.success("Document téléchargé avec succès");
+    } catch (error) {
+      console.error("Erreur de téléchargement:", error);
+      toast.error("Erreur lors du téléchargement du document");
+    }
+  };
+
+  // Fonction pour la prévisualisation des documents
+  const handlePreview = async (filePath: string) => {
+    try {
+      const { data: { publicUrl }, error } = await supabase.storage
+        .from('documents')
+        .getPublicUrl(filePath);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Ouvrir l'URL dans un nouvel onglet
+      window.open(publicUrl, '_blank');
+    } catch (error) {
+      console.error("Erreur de prévisualisation:", error);
+      toast.error("Erreur lors de la prévisualisation du document");
+    }
+  };
+
+  // Filtrer et trier les documents
+  const filteredAndSortedDocuments = () => {
+    if (!documents) return [];
+    
+    let filtered = [...documents];
+    
+    // Filtrage par recherche
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(doc => 
+        doc.title.toLowerCase().includes(query) ||
+        doc.reference_number.toLowerCase().includes(query) ||
+        doc.document_type.toLowerCase().includes(query)
+      );
+    }
+    
+    // Filtrage par catégorie
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(doc => doc.category_id === selectedCategory);
+    }
+    
+    // Tri des documents
+    if (sortColumn) {
+      filtered.sort((a, b) => {
+        const direction = sortDirection === "asc" ? 1 : -1;
+        
+        switch (sortColumn) {
+          case "title":
+            return a.title.localeCompare(b.title) * direction;
+          case "date":
+            return new Date(a.document_date).getTime() - 
+                  new Date(b.document_date).getTime() * direction;
+          case "type":
+            return a.document_type.localeCompare(b.document_type) * direction;
+          case "reference":
+            return a.reference_number.localeCompare(b.reference_number) * direction;
+          default:
+            return 0;
+        }
+      });
+    }
+    
+    return filtered;
+  };
+
+  // Gérer le tri
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -164,6 +249,22 @@ export default function Documents() {
       setSortDirection("asc");
     }
   };
+
+  if (error) {
+    return (
+      <div className="page-container">
+        <div className="text-center py-10">
+          <h2 className="text-xl text-destructive mb-2">
+            Erreur lors du chargement des documents
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            Une erreur est survenue lors de la récupération des documents.
+          </p>
+          <Button onClick={() => refetch()}>Réessayer</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
@@ -176,6 +277,8 @@ export default function Documents() {
             type="search"
             placeholder="Rechercher des documents..."
             className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className="flex gap-2">
@@ -206,123 +309,149 @@ export default function Documents() {
       >
         <TabsList>
           <TabsTrigger value="all">Tous</TabsTrigger>
-          <TabsTrigger value="documents-administratifs">Administratifs</TabsTrigger>
-          <TabsTrigger value="documents-techniques">Techniques</TabsTrigger>
-          <TabsTrigger value="documents-financiers">Financiers</TabsTrigger>
-          <TabsTrigger value="documents-de-communication">Communication</TabsTrigger>
-          <TabsTrigger value="archives-historiques">Historiques</TabsTrigger>
+          {categories.map(category => (
+            <TabsTrigger 
+              key={category.id} 
+              value={category.id}
+            >
+              {category.name}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value={selectedCategory} className="space-y-4">
           <Card>
             <CardHeader className="p-4">
               <CardTitle className="text-lg">
-                Liste des documents ({filteredDocuments.length})
+                Liste des documents ({isLoading ? '...' : filteredAndSortedDocuments().length})
               </CardTitle>
               <CardDescription>
                 Consultez et gérez les documents archivés
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[30px]">
-                      <Checkbox />
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer"
-                      onClick={() => handleSort("title")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Titre
-                        <ArrowUpDown className="h-4 w-4" />
-                      </div>
-                    </TableHead>
-                    <TableHead>Catégorie</TableHead>
-                    <TableHead 
-                      className="cursor-pointer"
-                      onClick={() => handleSort("type")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Type
-                        <ArrowUpDown className="h-4 w-4" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer"
-                      onClick={() => handleSort("date")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Date
-                        <ArrowUpDown className="h-4 w-4" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer"
-                      onClick={() => handleSort("reference")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Référence
-                        <ArrowUpDown className="h-4 w-4" />
-                      </div>
-                    </TableHead>
-                    <TableHead>Format</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredDocuments.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell>
+              {isLoading ? (
+                <div className="flex justify-center items-center p-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-ministry-blue" />
+                  <span className="ml-2">Chargement des documents...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[30px]">
                         <Checkbox />
-                      </TableCell>
-                      <TableCell className="font-medium">{doc.title}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{doc.category}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{doc.type}</Badge>
-                      </TableCell>
-                      <TableCell>{doc.date}</TableCell>
-                      <TableCell>{doc.reference}</TableCell>
-                      <TableCell>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer"
+                        onClick={() => handleSort("title")}
+                      >
                         <div className="flex items-center gap-1">
-                          <FileText className="h-4 w-4 text-ministry-blue" />
-                          <span className="text-xs">{doc.fileType}</span>
-                          <span className="text-xs text-muted-foreground">({doc.fileSize})</span>
+                          Titre
+                          <ArrowUpDown className="h-4 w-4" />
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>Détails</DropdownMenuItem>
-                              <DropdownMenuItem>Historique</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>Modifier</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
-                                Supprimer
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                      </TableHead>
+                      <TableHead>Catégorie</TableHead>
+                      <TableHead 
+                        className="cursor-pointer"
+                        onClick={() => handleSort("type")}
+                      >
+                        <div className="flex items-center gap-1">
+                          Type
+                          <ArrowUpDown className="h-4 w-4" />
                         </div>
-                      </TableCell>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer"
+                        onClick={() => handleSort("date")}
+                      >
+                        <div className="flex items-center gap-1">
+                          Date
+                          <ArrowUpDown className="h-4 w-4" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer"
+                        onClick={() => handleSort("reference")}
+                      >
+                        <div className="flex items-center gap-1">
+                          Référence
+                          <ArrowUpDown className="h-4 w-4" />
+                        </div>
+                      </TableHead>
+                      <TableHead>Format</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAndSortedDocuments().length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-10">
+                          <p className="text-muted-foreground">Aucun document trouvé</p>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredAndSortedDocuments().map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell>
+                            <Checkbox />
+                          </TableCell>
+                          <TableCell className="font-medium">{doc.title}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{doc.document_categories?.name || "Non catégorisé"}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{doc.document_type}</Badge>
+                          </TableCell>
+                          <TableCell>{formatDate(doc.document_date)}</TableCell>
+                          <TableCell>{doc.reference_number}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {getFileIcon(doc.file_type)}
+                              <span className="text-xs">{doc.file_type?.split('/')[1]?.toUpperCase() || "DOC"}</span>
+                              <span className="text-xs text-muted-foreground">({formatFileSize(doc.file_size)})</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handlePreview(doc.file_path)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleDownload(doc.file_path, doc.title)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem>Détails</DropdownMenuItem>
+                                  <DropdownMenuItem>Historique</DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem>Modifier</DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive">
+                                    Supprimer
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
