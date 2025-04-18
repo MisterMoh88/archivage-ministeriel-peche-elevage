@@ -1,4 +1,5 @@
 
+import React from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { FileText, FileImage, FileSpreadsheet, FileArchive, File } from "lucide-react";
@@ -88,4 +89,3 @@ export const handlePreview = async (filePath: string) => {
     toast.error("Erreur lors de la prévisualisation du document");
   }
 };
-
