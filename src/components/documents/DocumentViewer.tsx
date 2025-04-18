@@ -196,7 +196,7 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
                         <User className="h-3 w-3 mr-1 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground">{entry.user_fullname || "Utilisateur inconnu"}</span>
                       </div>
-                      {entry.details && entry.details.notes && (
+                      {entry.details && typeof entry.details === "object" && entry.details.notes && (
                         <p className="text-xs mt-1">{entry.details.notes}</p>
                       )}
                     </div>

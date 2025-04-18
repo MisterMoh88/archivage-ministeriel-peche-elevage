@@ -60,7 +60,7 @@ export default function Documents() {
   const filteredAndSortedDocuments = () => {
     if (!documents) return [];
     
-    let filtered = [...documents];
+    let filtered = [...documents] as Document[];
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -83,8 +83,8 @@ export default function Documents() {
           case "title":
             return a.title.localeCompare(b.title) * direction;
           case "date":
-            return new Date(a.document_date).getTime() - 
-                  new Date(b.document_date).getTime() * direction;
+            return (new Date(a.document_date).getTime() - 
+                  new Date(b.document_date).getTime()) * direction;
           case "type":
             return a.document_type.localeCompare(b.document_type) * direction;
           case "reference":

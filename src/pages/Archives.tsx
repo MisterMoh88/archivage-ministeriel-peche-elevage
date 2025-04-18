@@ -45,7 +45,7 @@ export default function Archives() {
   const filteredAndSortedDocuments = () => {
     if (!documents) return [];
     
-    let filtered = [...documents];
+    let filtered = [...documents] as Document[];
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();

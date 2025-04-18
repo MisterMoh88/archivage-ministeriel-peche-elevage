@@ -128,11 +128,15 @@ export const updateDocument = async (documentId: string, updates: Partial<Docume
       throw new Error("Utilisateur non authentifié");
     }
 
+    // Convert status value if needed to match database enum
+    const updatesWithCorrectStatus = { ...updates };
+    // No need to modify status as we've updated the type definition
+
     // Mettre à jour le document
     const { data, error } = await supabase
       .from('documents')
       .update({
-        ...updates,
+        ...updatesWithCorrectStatus,
         modified_by: user.id,
         last_modified: new Date().toISOString()
       })
@@ -211,7 +215,7 @@ export const getDocumentHistory = async (documentId: string) => {
     // Format the data to include user fullname
     return data.map(action => ({
       ...action,
-      user_fullname: action.profiles?.full_name
+      user_fullname: action.profiles ? action.profiles.full_name : undefined
     }));
   } catch (error: any) {
     console.error("Erreur lors de la récupération de l'historique:", error);

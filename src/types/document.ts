@@ -22,7 +22,7 @@ export interface Document {
   uploaded_by: string;
   last_modified?: string;
   modified_by?: string;
-  status?: "actif" | "archive";
+  status?: "actif" | "archivé"; // Changed from "actif" | "archive" to match database enum
 }
 
 export interface DocumentHistory {
@@ -37,6 +37,6 @@ export interface DocumentHistory {
       before: Partial<Document>;
       after: Partial<Document>;
     };
-  };
+  } | string; // Added string type to handle simple string details
   user_fullname?: string;
 }
