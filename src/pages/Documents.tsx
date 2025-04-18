@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/tabs";
 import {
   FileText,
-  FilePdf,
   FileImage,
   FileSpreadsheet,
   FileArchive,
@@ -51,6 +50,7 @@ import {
   Filter,
   ArrowUpDown,
   Loader2,
+  File,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -108,7 +108,7 @@ export default function Documents() {
   // Fonction pour obtenir l'icône de fichier en fonction du type
   const getFileIcon = (fileType: string) => {
     const type = fileType?.toLowerCase() || "";
-    if (type.includes("pdf")) return <FilePdf className="h-4 w-4 text-ministry-blue" />;
+    if (type.includes("pdf")) return <File className="h-4 w-4 text-ministry-blue" />;
     if (type.includes("image") || type.includes("jpg") || type.includes("png")) 
       return <FileImage className="h-4 w-4 text-ministry-blue" />;
     if (type.includes("sheet") || type.includes("excel") || type.includes("xlsx")) 
@@ -179,16 +179,16 @@ export default function Documents() {
   // Fonction pour la prévisualisation des documents
   const handlePreview = async (filePath: string) => {
     try {
-      const { data: { publicUrl }, error } = await supabase.storage
+      const { data } = await supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
       
-      if (error) {
-        throw error;
+      if (!data || !data.publicUrl) {
+        throw new Error("Impossible d'obtenir l'URL publique");
       }
       
       // Ouvrir l'URL dans un nouvel onglet
-      window.open(publicUrl, '_blank');
+      window.open(data.publicUrl, '_blank');
     } catch (error) {
       console.error("Erreur de prévisualisation:", error);
       toast.error("Erreur lors de la prévisualisation du document");
