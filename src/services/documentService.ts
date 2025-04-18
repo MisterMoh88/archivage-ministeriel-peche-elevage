@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
+import { Document } from "@/types/document";
 
 interface UploadDocumentProps {
   title: string;
@@ -116,6 +117,158 @@ export const getDocuments = async () => {
     return data;
   } catch (error: any) {
     toast.error(error.message || "Erreur lors de la récupération des documents");
+    throw error;
+  }
+};
+
+export const updateDocument = async (documentId: string, updates: Partial<Document>) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("Utilisateur non authentifié");
+    }
+
+    // Mettre à jour le document
+    const { data, error } = await supabase
+      .from('documents')
+      .update({
+        ...updates,
+        modified_by: user.id,
+        last_modified: new Date().toISOString()
+      })
+      .eq('id', documentId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("Erreur lors de la mise à jour:", error);
+    throw error;
+  }
+};
+
+export const deleteDocument = async (documentId: string) => {
+  try {
+    // 1. Récupérer les informations du document pour supprimer le fichier
+    const { data: document, error: fetchError } = await supabase
+      .from('documents')
+      .select('file_path')
+      .eq('id', documentId)
+      .single();
+
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    // 2. Supprimer le document de la base de données
+    const { error: deleteError } = await supabase
+      .from('documents')
+      .delete()
+      .eq('id', documentId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    // 3. Supprimer le fichier associé du stockage
+    if (document?.file_path) {
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([document.file_path]);
+
+      if (storageError) {
+        console.error("Erreur lors de la suppression du fichier:", storageError);
+        // On ne lève pas d'erreur ici car le document a déjà été supprimé de la base
+      }
+    }
+
+    return true;
+  } catch (error: any) {
+    console.error("Erreur lors de la suppression:", error);
+    throw error;
+  }
+};
+
+export const getDocumentHistory = async (documentId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_actions')
+      .select(`
+        *,
+        profiles:user_id(full_name)
+      `)
+      .eq('document_id', documentId)
+      .order('performed_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    // Format the data to include user fullname
+    return data.map(action => ({
+      ...action,
+      user_fullname: action.profiles?.full_name
+    }));
+  } catch (error: any) {
+    console.error("Erreur lors de la récupération de l'historique:", error);
+    throw error;
+  }
+};
+
+export const getRecentDocuments = async (limit = 5) => {
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .select(`
+        *,
+        document_categories(name, description)
+      `)
+      .order('upload_date', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("Erreur lors de la récupération des documents récents:", error);
+    throw error;
+  }
+};
+
+export const countDocumentsByCategory = async () => {
+  try {
+    const { data: categories, error: categoriesError } = await supabase
+      .from('document_categories')
+      .select('id, name');
+
+    if (categoriesError) throw categoriesError;
+
+    // Get all documents with category_id
+    const { data: documents, error: documentsError } = await supabase
+      .from('documents')
+      .select('category_id');
+
+    if (documentsError) throw documentsError;
+
+    // Count documents by category
+    const counts = categories.map(category => {
+      const count = documents.filter(doc => doc.category_id === category.id).length;
+      return {
+        id: category.id,
+        name: category.name,
+        count
+      };
+    });
+
+    return counts;
+  } catch (error: any) {
+    console.error("Erreur lors du comptage des documents par catégorie:", error);
     throw error;
   }
 };

@@ -108,6 +108,11 @@ export default function Documents() {
     }
   };
 
+  // Handle document changes (edit, delete, etc.)
+  const handleDocumentChange = () => {
+    refetch();
+  };
+
   if (error) {
     return (
       <div className="page-container">
@@ -224,7 +229,12 @@ export default function Documents() {
                       </TableRow>
                     ) : (
                       filteredAndSortedDocuments().map((doc) => (
-                        <DocumentTableRow key={doc.id} document={doc} />
+                        <DocumentTableRow 
+                          key={doc.id} 
+                          document={doc}
+                          categories={categories}
+                          onDocumentChange={handleDocumentChange}
+                        />
                       ))
                     )}
                   </TableBody>

@@ -89,3 +89,21 @@ export const handlePreview = async (filePath: string) => {
     toast.error("Erreur lors de la prévisualisation du document");
   }
 };
+
+// Log document view in history
+export const logDocumentView = async (documentId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return; // Silent fail if not authenticated
+    
+    await supabase.from('user_actions').insert({
+      user_id: user.id,
+      document_id: documentId,
+      action_type: 'view',
+      details: { action: 'Consultation du document' }
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'enregistrement de la consultation:", error);
+    // Silent fail, don't show toast to user for view logging
+  }
+};
