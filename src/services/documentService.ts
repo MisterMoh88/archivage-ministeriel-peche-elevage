@@ -212,11 +212,12 @@ export const getDocumentHistory = async (documentId: string) => {
       throw error;
     }
 
-    // Format the data to include user fullname
-    return data.map(action => ({
+    // Safely type and transform the data
+    return data?.map(action => ({
       ...action,
-      user_fullname: action.profiles?.full_name
-    }));
+      user_fullname: action.profiles?.full_name || 'Unknown User'
+    })) || [];
+
   } catch (error: any) {
     console.error("Erreur lors de la récupération de l'historique:", error);
     throw error;
