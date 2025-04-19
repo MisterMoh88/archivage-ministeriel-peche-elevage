@@ -8,7 +8,7 @@ export const getDocumentHistory = async (documentId: string): Promise<DocumentHi
       .from('user_actions')
       .select(`
         *,
-        profiles:user_id (full_name)
+        profiles(full_name)
       `)
       .eq('document_id', documentId)
       .order('performed_at', { ascending: false });
@@ -26,7 +26,7 @@ export const getDocumentHistory = async (documentId: string): Promise<DocumentHi
         user_id: action.user_id,
         action_type: action.action_type as "upload" | "update" | "delete" | "view",
         performed_at: action.performed_at,
-        user_fullname: action.profiles?.full_name || 'Unknown User'
+        user_fullname: action.profiles?.full_name || 'Utilisateur inconnu'
       };
 
       // Handle the details field - it could be a string or an object with specific properties
