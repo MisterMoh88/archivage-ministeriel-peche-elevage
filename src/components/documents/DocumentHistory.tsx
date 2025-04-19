@@ -12,7 +12,7 @@ interface DocumentHistoryProps {
 export const DocumentHistory = ({ history, isLoading }: DocumentHistoryProps) => {
   const getHistoryDetails = (details: any): string | undefined => {
     if (!details) return undefined;
-    if (typeof details === 'string') return undefined;
+    if (typeof details === 'string') return details;
     return details.notes;
   };
 
