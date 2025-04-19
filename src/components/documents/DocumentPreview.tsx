@@ -13,12 +13,16 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
                  document.file_type?.includes("jpg") || 
                  document.file_type?.includes("png") || 
                  document.file_type?.includes("jpeg");
+                 
+  const getPublicUrl = (filePath: string) => {
+    return `https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents/${filePath}`;
+  };
 
   return (
     <div className="h-[60vh] border rounded-md bg-muted/30 overflow-hidden">
       {isPdf && (
         <iframe 
-          src={`https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents/${document.file_path}#toolbar=0&navpanes=0`} 
+          src={`${getPublicUrl(document.file_path)}#toolbar=0&navpanes=0`}
           className="w-full h-full" 
           title={document.title}
         />
@@ -26,7 +30,7 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
       {isImage && (
         <div className="flex items-center justify-center h-full">
           <img 
-            src={`https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents/${document.file_path}`} 
+            src={getPublicUrl(document.file_path)}
             alt={document.title} 
             className="max-w-full max-h-full object-contain"
           />
@@ -38,7 +42,7 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
           <Button 
             variant="outline" 
             className="mt-4"
-            onClick={() => window.open(`https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents/${document.file_path}`, '_blank')}
+            onClick={() => window.open(getPublicUrl(document.file_path), '_blank')}
           >
             Télécharger pour visualiser
           </Button>
