@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Document } from "@/types/document";
 import { TableRow, TableCell } from "@/components/ui/table";
@@ -12,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Download, MoreVertical, FileText, FilePen, Trash2, History } from "lucide-react";
+import { Eye, Download, MoreVertical, FileText, FilePen, Trash2 } from "lucide-react";
 import { formatDate, formatFileSize, getFileIcon, handleDownload, handlePreview, logDocumentView } from "@/utils/documentUtils";
 import { DocumentViewer } from "./DocumentViewer";
 import { DocumentEditForm } from "./DocumentEditForm";

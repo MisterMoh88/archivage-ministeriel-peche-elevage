@@ -22,7 +22,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Check, FileUp, XCircle, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { uploadDocument, getDocumentCategories } from "@/services/documentService";
+import { uploadDocument } from "@/services/documents/uploadService";
+import { getDocumentCategories } from "@/services/documents/categoryService";
 import { toast } from "sonner";
 
 interface CategoryType {

@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import { getDocuments, getDocumentCategories } from "@/services/documentService";
+import { getDocuments } from "@/services/documents/crudService";
+import { getDocumentCategories } from "@/services/documents/categoryService";
 import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { DocumentEditForm } from "@/components/documents/DocumentEditForm";
 import { DocumentDeleteConfirm } from "@/components/documents/DocumentDeleteConfirm";

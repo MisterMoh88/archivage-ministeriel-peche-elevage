@@ -24,7 +24,10 @@ export const getDocumentHistory = async (documentId: string): Promise<DocumentHi
       user_id: action.user_id,
       action_type: action.action_type as "upload" | "update" | "delete" | "view",
       performed_at: action.performed_at,
-      details: action.details,
+      details: typeof action.details === 'string' ? action.details : {
+        notes: action.details?.notes,
+        changes: action.details?.changes
+      },
       user_fullname: action.profiles?.full_name || 'Unknown User'
     }));
 

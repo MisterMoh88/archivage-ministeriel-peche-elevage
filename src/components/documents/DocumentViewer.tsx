@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Document } from "@/types/document";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import { getDocumentHistory } from "@/services/documentService";
+import { getDocumentHistory } from "@/services/documents/historyService";
 import { DocumentPreview } from "./DocumentPreview";
 import { DocumentDetails } from "./DocumentDetails";
 import { DocumentHistory } from "./DocumentHistory";

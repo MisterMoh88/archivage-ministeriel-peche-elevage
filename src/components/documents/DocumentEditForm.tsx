@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Document } from "@/types/document";
 import { toast } from "sonner";
-import { updateDocument } from "@/services/documentService";
+import { updateDocument } from "@/services/documents/crudService";
 import { Loader2 } from "lucide-react";
 
 interface DocumentEditFormProps {

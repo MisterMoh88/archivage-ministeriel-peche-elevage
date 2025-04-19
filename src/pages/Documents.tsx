@@ -1,7 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getDocuments, getDocumentCategories } from "@/services/documentService";
+import { Button } from "@/components/ui/button";
+import { getDocuments } from "@/services/documents/crudService";
+import { getDocumentCategories } from "@/services/documents/categoryService";
 import { DocumentSearchBar } from "@/components/documents/DocumentSearchBar";
 import { DocumentCategoryTabs } from "@/components/documents/DocumentCategoryTabs";
 import { DocumentsTable } from "@/components/documents/DocumentsTable";
