@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -40,14 +39,10 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
         throw new Error("Chemin du fichier manquant");
       }
       
-      // Obtenir l'URL publique
-      const { data, error } = await supabase.storage
+      // Obtenir l'URL publique - Noter que la nouvelle API ne retourne plus d'erreur séparément
+      const { data } = await supabase.storage
         .from('documents')
         .getPublicUrl(document.file_path);
-      
-      if (error) {
-        throw error;
-      }
       
       if (!data || !data.publicUrl) {
         throw new Error("Impossible d'obtenir l'URL publique");

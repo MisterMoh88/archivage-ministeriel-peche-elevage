@@ -1,4 +1,3 @@
-
 import React from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,10 +65,11 @@ export const handleDownload = async (filePath: string, title: string) => {
     URL.revokeObjectURL(url);
     document.body.removeChild(link);
     
-    toast.success("Document téléchargé avec succès");
+    return Promise.resolve(); // Pour permettre l'enchaînement avec .then()
   } catch (error) {
     console.error("Erreur de téléchargement:", error);
     toast.error("Erreur lors du téléchargement du document");
+    return Promise.reject(error); // Pour permettre la gestion avec .catch()
   }
 };
 
