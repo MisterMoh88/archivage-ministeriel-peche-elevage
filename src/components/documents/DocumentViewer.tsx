@@ -19,18 +19,16 @@ interface DocumentViewerProps {
 }
 
 export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProps) => {
+  // Return early if document is null or dialog is not open
+  if (!document || !isOpen) return null;
+  
   const [activeTab, setActiveTab] = useState<string>("preview");
   
   const { data: documentHistory, isLoading: historyLoading } = useQuery({
-    queryKey: ["documentHistory", document?.id],
-    queryFn: () => getDocumentHistory(document?.id || ""),
+    queryKey: ["documentHistory", document.id],
+    queryFn: () => getDocumentHistory(document.id || ""),
     enabled: !!document && isOpen && activeTab === "history",
   });
-
-  if (!document) return null;
-  
-  // Return early if not open - crucial to avoid hook issues
-  if (!isOpen) return null;
 
   const downloadDocument = () => {
     if (document && document.file_path) {

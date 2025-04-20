@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -15,12 +15,10 @@ interface DocumentDeleteConfirmProps {
 }
 
 export const DocumentDeleteConfirm = ({ documentId, documentTitle, isOpen, onClose, onSuccess }: DocumentDeleteConfirmProps) => {
-  const [isDeleting, setIsDeleting] = React.useState(false);
-
-  if (!documentId) return null;
+  // Return early if documentId is null or dialog is not open
+  if (!documentId || !isOpen) return null;
   
-  // Return early if not open - this prevents React hooks errors
-  if (!isOpen) return null;
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
     try {

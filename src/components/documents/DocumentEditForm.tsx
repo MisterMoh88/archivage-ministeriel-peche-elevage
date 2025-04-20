@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Document } from "@/types/document";
@@ -17,19 +17,18 @@ interface DocumentEditFormProps {
 }
 
 export const DocumentEditForm = ({ document, isOpen, onClose, onSuccess, categories }: DocumentEditFormProps) => {
-  const [formData, setFormData] = useState<Partial<Document>>(document || {});
+  // Return early if document is null or dialog is not open
+  if (!document || !isOpen) return null;
+  
+  const [formData, setFormData] = useState<Partial<Document>>(document);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  React.useEffect(() => {
+  // Update formData when document changes
+  useEffect(() => {
     if (document) {
       setFormData(document);
     }
   }, [document]);
-
-  if (!document) return null;
-  
-  // Return early if not open - this is critical to avoid hook initialization errors
-  if (!isOpen) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
