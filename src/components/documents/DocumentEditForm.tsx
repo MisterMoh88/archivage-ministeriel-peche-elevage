@@ -31,6 +31,9 @@ export const DocumentEditForm = ({ document, isOpen, onClose, onSuccess, categor
   }, [document]);
 
   if (!document) return null;
+  
+  // Ne rendre le Dialog que si isOpen est true pour éviter les erreurs de hooks React
+  if (!isOpen) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
