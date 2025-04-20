@@ -36,7 +36,7 @@ export const DocumentDeleteConfirm = ({ documentId, documentTitle, isOpen, onClo
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <AlertDialog open={true}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce document ?</AlertDialogTitle>
@@ -46,7 +46,7 @@ export const DocumentDeleteConfirm = ({ documentId, documentTitle, isOpen, onClo
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogCancel onClick={onClose}>Annuler</AlertDialogCancel>
           <Button 
             variant="destructive" 
             onClick={handleDelete} 

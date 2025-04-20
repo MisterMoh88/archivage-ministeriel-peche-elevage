@@ -27,7 +27,7 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
   const { data: documentHistory, isLoading: historyLoading } = useQuery({
     queryKey: ["documentHistory", document.id],
     queryFn: () => getDocumentHistory(document.id || ""),
-    enabled: !!document && isOpen && activeTab === "history",
+    enabled: !!document && activeTab === "history",
   });
 
   const downloadDocument = () => {
@@ -44,7 +44,7 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={true}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{document.title}</DialogTitle>

@@ -62,7 +62,7 @@ export const DocumentEditForm = ({ document, isOpen, onClose, onSuccess, categor
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={true}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Modifier le document</DialogTitle>
