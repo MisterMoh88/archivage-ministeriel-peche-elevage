@@ -24,10 +24,13 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
   const { data: documentHistory, isLoading: historyLoading } = useQuery({
     queryKey: ["documentHistory", document?.id],
     queryFn: () => getDocumentHistory(document?.id || ""),
-    enabled: !!document && activeTab === "history",
+    enabled: !!document && isOpen && activeTab === "history",
   });
 
   if (!document) return null;
+  
+  // Return early if not open - crucial to avoid hook issues
+  if (!isOpen) return null;
 
   const downloadDocument = () => {
     if (document && document.file_path) {
@@ -41,9 +44,6 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
         });
     }
   };
-
-  // Ne rendre le Dialog que si isOpen est true pour éviter les erreurs de hooks React
-  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

@@ -27,6 +27,8 @@ export const DocumentEditForm = ({ document, isOpen, onClose, onSuccess, categor
   }, [document]);
 
   if (!document) return null;
+  
+  // Return early if not open - this is critical to avoid hook initialization errors
   if (!isOpen) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

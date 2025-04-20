@@ -19,7 +19,7 @@ export const DocumentDeleteConfirm = ({ documentId, documentTitle, isOpen, onClo
 
   if (!documentId) return null;
   
-  // Ne rendre l'AlertDialog que si isOpen est true pour éviter les erreurs de hooks React
+  // Return early if not open - this prevents React hooks errors
   if (!isOpen) return null;
 
   const handleDelete = async () => {
