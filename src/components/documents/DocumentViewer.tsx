@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Document } from "@/types/document";
@@ -9,6 +9,8 @@ import { getDocumentHistory } from "@/services/documents/historyService";
 import { DocumentPreview } from "./DocumentPreview";
 import { DocumentDetails } from "./DocumentDetails";
 import { DocumentHistory } from "./DocumentHistory";
+import { toast } from "sonner";
+import { handleDownload } from "@/utils/documentUtils";
 
 interface DocumentViewerProps {
   document: Document | null;
@@ -26,6 +28,19 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
   });
 
   if (!document) return null;
+
+  const downloadDocument = () => {
+    if (document && document.file_path) {
+      handleDownload(document.file_path, document.title)
+        .then(() => {
+          toast.success("Document téléchargé avec succès");
+        })
+        .catch((error) => {
+          console.error("Erreur lors du téléchargement:", error);
+          toast.error("Erreur lors du téléchargement du document");
+        });
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -58,6 +73,7 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
         </Tabs>
 
         <DialogFooter className="space-x-2">
+          <Button variant="outline" onClick={downloadDocument}>Télécharger</Button>
           <Button variant="outline" onClick={onClose}>Fermer</Button>
         </DialogFooter>
       </DialogContent>
