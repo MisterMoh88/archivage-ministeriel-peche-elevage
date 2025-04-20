@@ -40,83 +40,32 @@ import {
   UserCog,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Users() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string | null>(null);
 
-  // Données fictives pour la démonstration
-  const users = [
-    {
-      id: 1,
-      name: "Amadou Diallo",
-      email: "a.diallo@elevage-peche.gouv.ml",
-      role: "Administrateur",
-      department: "Direction Générale",
-      phone: "+223 76 12 34 56",
-      lastActive: "Aujourd'hui, 09:45",
-      status: "Actif",
-    },
-    {
-      id: 2,
-      name: "Fatima Touré",
-      email: "f.toure@elevage-peche.gouv.ml",
-      role: "Archiviste",
-      department: "Service Documentation",
-      phone: "+223 76 23 45 67",
-      lastActive: "Aujourd'hui, 08:20",
-      status: "Actif",
-    },
-    {
-      id: 3,
-      name: "Ibrahim Camara",
-      email: "i.camara@elevage-peche.gouv.ml",
-      role: "Utilisateur",
-      department: "Direction de la Pêche",
-      phone: "+223 76 34 56 78",
-      lastActive: "Hier, 16:33",
-      status: "Actif",
-    },
-    {
-      id: 4,
-      name: "Aïssata Koné",
-      email: "a.kone@elevage-peche.gouv.ml",
-      role: "Archiviste",
-      department: "Service Archives",
-      phone: "+223 76 45 67 89",
-      lastActive: "15/04/2023, 11:05",
-      status: "Inactif",
-    },
-    {
-      id: 5,
-      name: "Moussa Coulibaly",
-      email: "m.coulibaly@elevage-peche.gouv.ml",
-      role: "Utilisateur",
-      department: "Direction de l'Élevage",
-      phone: "+223 76 56 78 90",
-      lastActive: "14/04/2023, 14:22",
-      status: "Actif",
-    },
-    {
-      id: 6,
-      name: "Fatoumata Sidibé",
-      email: "f.sidibe@elevage-peche.gouv.ml",
-      role: "Utilisateur",
-      department: "Service Administratif",
-      phone: "+223 76 67 89 01",
-      lastActive: "12/04/2023, 10:15",
-      status: "Actif",
-    },
-    {
-      id: 7,
-      name: "Oumar Konaté",
-      email: "o.konate@elevage-peche.gouv.ml",
-      role: "Administrateur",
-      department: "Service Informatique",
-      phone: "+223 76 78 90 12",
-      lastActive: "10/04/2023, 16:40",
-      status: "Actif",
-    },
-  ];
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*');
+      return data || [];
+    }
+  });
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = !searchQuery || 
+      user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.department?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesRole = !roleFilter || user.role === roleFilter;
+
+    return matchesSearch && matchesRole;
+  });
 
   return (
     <div className="page-container">
@@ -155,11 +104,19 @@ export default function Users() {
                   <Button variant="outline">Filtrer par rôle</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Tous les rôles</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRoleFilter(null)}>
+                    Tous les rôles
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>Administrateurs</DropdownMenuItem>
-                  <DropdownMenuItem>Archivistes</DropdownMenuItem>
-                  <DropdownMenuItem>Utilisateurs</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRoleFilter('admin')}>
+                    Administrateurs
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRoleFilter('archiviste')}>
+                    Archivistes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRoleFilter('utilisateur')}>
+                    Utilisateurs
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -179,14 +136,20 @@ export default function Users() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users
-                  .filter(
-                    (user) =>
-                      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      user.department.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map((user) => (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10">
+                      Chargement...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10">
+                      Aucun utilisateur trouvé
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -194,7 +157,7 @@ export default function Users() {
                             <User className="h-5 w-5 text-ministry-blue" />
                           </div>
                           <div>
-                            <div className="font-medium">{user.name}</div>
+                            <div className="font-medium">{user.full_name}</div>
                             <div className="text-sm text-muted-foreground">{user.email}</div>
                           </div>
                         </div>
@@ -202,9 +165,9 @@ export default function Users() {
                       <TableCell>
                         <Badge
                           variant={
-                            user.role === "Administrateur"
+                            user.role === "admin"
                               ? "default"
-                              : user.role === "Archiviste"
+                              : user.role === "archiviste"
                               ? "secondary"
                               : "outline"
                           }
@@ -216,16 +179,14 @@ export default function Users() {
                       <TableCell>
                         <div className="flex flex-col text-sm">
                           <div className="flex items-center gap-1">
-                            <Mail className="h-3 w-3 text-muted-foreground" />
-                            <span>Email</span>
-                          </div>
-                          <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3 text-muted-foreground" />
-                            <span>{user.phone}</span>
+                            <span>{user.phone || "Non renseigné"}</span>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{user.lastActive}</TableCell>
+                      <TableCell>
+                        {user.last_active ? new Date(user.last_active).toLocaleString() : "Jamais"}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center">
                           <span
@@ -267,7 +228,8 @@ export default function Users() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

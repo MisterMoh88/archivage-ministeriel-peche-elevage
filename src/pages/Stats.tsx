@@ -2,47 +2,143 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+
+// Fetch functions
+const fetchDocumentsByCategory = async () => {
+  const { data } = await supabase
+    .from('documents')
+    .select(`
+      document_categories!inner(name)
+    `);
+
+  if (!data) return [];
+
+  const categoryCount = data.reduce((acc: any, doc) => {
+    const category = doc.document_categories.name;
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Fixed color mapping for categories
+  const colors = {
+    "Documents administratifs et réglementaires": "#4A9BDB",
+    "Documents techniques et spécialisés": "#1A5B8F",
+    "Documents financiers et comptables": "#F8B93B",
+    "Documents de communication et de sensibilisation": "#5BCEFA",
+    "Archives et documentation historique": "#6B7280",
+  };
+
+  return Object.entries(categoryCount).map(([name, value]) => ({
+    name,
+    value,
+    color: colors[name as keyof typeof colors] || "#6B7280"
+  }));
+};
+
+const fetchDocumentsByYear = async () => {
+  const { data } = await supabase
+    .from('documents')
+    .select(`
+      document_date,
+      document_categories!inner(name)
+    `);
+
+  if (!data) return [];
+
+  const yearlyData: any = {};
+  
+  data.forEach(doc => {
+    const year = new Date(doc.document_date).getFullYear().toString();
+    const category = doc.document_categories.name;
+    
+    if (!yearlyData[year]) {
+      yearlyData[year] = {
+        name: year,
+        "Documents administratifs": 0,
+        "Documents techniques": 0,
+        "Documents financiers": 0,
+        "Documents de communication": 0,
+        "Archives historiques": 0,
+      };
+    }
+    
+    const categoryMapping: any = {
+      "Documents administratifs et réglementaires": "Documents administratifs",
+      "Documents techniques et spécialisés": "Documents techniques",
+      "Documents financiers et comptables": "Documents financiers",
+      "Documents de communication et de sensibilisation": "Documents de communication",
+      "Archives et documentation historique": "Archives historiques",
+    };
+    
+    yearlyData[year][categoryMapping[category]]++;
+  });
+
+  return Object.values(yearlyData);
+};
+
+const fetchUploadsByMonth = async () => {
+  const { data } = await supabase
+    .from('documents')
+    .select('upload_date');
+
+  if (!data) return [];
+
+  const monthCount: any = {};
+  const months = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+
+  data.forEach(doc => {
+    const date = new Date(doc.upload_date);
+    const monthIndex = date.getMonth();
+    const monthName = months[monthIndex];
+    monthCount[monthName] = (monthCount[monthName] || 0) + 1;
+  });
+
+  return months.map(month => ({
+    name: month,
+    count: monthCount[month] || 0
+  }));
+};
+
+const fetchUserActivity = async () => {
+  const { data } = await supabase
+    .from('user_actions')
+    .select('action_type');
+
+  if (!data) return [];
+
+  const activityCount = data.reduce((acc: any, action) => {
+    acc[action.action_type] = (acc[action.action_type] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(activityCount).map(([name, count]) => ({
+    name,
+    count
+  }));
+};
 
 export default function Stats() {
-  // Données fictives pour les statistiques
-  const documentsByCategory = [
-    { name: "Documents administratifs", value: 578, color: "#4A9BDB" },
-    { name: "Documents techniques", value: 342, color: "#1A5B8F" },
-    { name: "Documents financiers", value: 289, color: "#F8B93B" },
-    { name: "Documents de communication", value: 156, color: "#5BCEFA" },
-    { name: "Archives historiques", value: 91, color: "#6B7280" },
-  ];
+  const { data: documentsByCategory = [] } = useQuery({
+    queryKey: ['documentsByCategory'],
+    queryFn: fetchDocumentsByCategory
+  });
 
-  const documentsByYear = [
-    { name: "2019", administratifs: 98, techniques: 54, financiers: 42, communication: 25, historiques: 8 },
-    { name: "2020", administratifs: 120, techniques: 65, financiers: 51, communication: 31, historiques: 12 },
-    { name: "2021", administratifs: 145, techniques: 72, financiers: 60, communication: 35, historiques: 18 },
-    { name: "2022", administratifs: 170, techniques: 89, financiers: 73, communication: 40, historiques: 25 },
-    { name: "2023", administratifs: 45, techniques: 62, financiers: 63, communication: 25, historiques: 28 },
-  ];
+  const { data: documentsByYear = [] } = useQuery({
+    queryKey: ['documentsByYear'],
+    queryFn: fetchDocumentsByYear
+  });
 
-  const uploadsByMonth = [
-    { name: "Jan", count: 65 },
-    { name: "Fév", count: 59 },
-    { name: "Mar", count: 80 },
-    { name: "Avr", count: 81 },
-    { name: "Mai", count: 56 },
-    { name: "Juin", count: 55 },
-    { name: "Juil", count: 40 },
-    { name: "Août", count: 45 },
-    { name: "Sep", count: 67 },
-    { name: "Oct", count: 88 },
-    { name: "Nov", count: 74 },
-    { name: "Déc", count: 51 },
-  ];
+  const { data: uploadsByMonth = [] } = useQuery({
+    queryKey: ['uploadsByMonth'],
+    queryFn: fetchUploadsByMonth
+  });
 
-  const userActivity = [
-    { name: "Consultation", count: 842 },
-    { name: "Téléchargement", count: 456 },
-    { name: "Upload", count: 245 },
-    { name: "Recherche", count: 567 },
-    { name: "Modification", count: 123 },
-  ];
+  const { data: userActivity = [] } = useQuery({
+    queryKey: ['userActivity'],
+    queryFn: fetchUserActivity
+  });
 
   return (
     <div className="page-container">
@@ -57,7 +153,6 @@ export default function Stats() {
 
         <TabsContent value="documents" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Répartition par catégorie */}
             <Card>
               <CardHeader>
                 <CardTitle>Répartition par catégorie</CardTitle>
@@ -86,7 +181,6 @@ export default function Stats() {
               </CardContent>
             </Card>
 
-            {/* Évolution par année */}
             <Card>
               <CardHeader>
                 <CardTitle>Évolution par année</CardTitle>
@@ -102,11 +196,11 @@ export default function Stats() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="administratifs" name="Administratifs" fill="#4A9BDB" />
-                    <Bar dataKey="techniques" name="Techniques" fill="#1A5B8F" />
-                    <Bar dataKey="financiers" name="Financiers" fill="#F8B93B" />
-                    <Bar dataKey="communication" name="Communication" fill="#5BCEFA" />
-                    <Bar dataKey="historiques" name="Historiques" fill="#6B7280" />
+                    <Bar dataKey="Documents administratifs" fill="#4A9BDB" />
+                    <Bar dataKey="Documents techniques" fill="#1A5B8F" />
+                    <Bar dataKey="Documents financiers" fill="#F8B93B" />
+                    <Bar dataKey="Documents de communication" fill="#5BCEFA" />
+                    <Bar dataKey="Archives historiques" fill="#6B7280" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
