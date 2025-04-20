@@ -42,6 +42,9 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
     }
   };
 
+  // Ne rendre le Dialog que si isOpen est true pour éviter les erreurs de hooks React
+  if (!isOpen) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
