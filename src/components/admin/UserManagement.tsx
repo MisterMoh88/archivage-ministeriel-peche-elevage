@@ -94,7 +94,7 @@ export function UserManagement() {
       const enrichedProfiles: User[] = [];
       
       if (profiles && profiles.length > 0) {
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
         
         if (authError) {
           console.error("Error fetching auth users:", authError);
@@ -104,12 +104,12 @@ export function UserManagement() {
           })) as User[];
         }
 
+        const authUsers = authResponse?.users || [];
+        
         const userEmailMap = new Map<string, string>();
-        if (authUsers && authUsers.users) {
-          authUsers.users.forEach(user => {
-            userEmailMap.set(user.id, user.email || "");
-          });
-        }
+        authUsers.forEach(user => {
+          userEmailMap.set(user.id, user.email || "");
+        });
 
         profiles.forEach(profile => {
           enrichedProfiles.push({
@@ -222,7 +222,7 @@ export function UserManagement() {
   });
 
   const toggleUserStatusMutation = useMutation({
-    mutationFn: async (user: any) => {
+    mutationFn: async (user: User) => {
       const newStatus = user.status === "Actif" ? "Inactif" : "Actif";
       
       const { error } = await supabase
