@@ -44,21 +44,23 @@ import { Database } from "@/integrations/supabase/types";
 
 type UserRole = Database["public"]["Enums"]["user_role"];
 
+interface User {
+  id: string;
+  email?: string;
+  full_name: string | null;
+  role: UserRole;
+  department: string | null;
+  status: string | null;
+  phone: string | null;
+  last_active: string | null;
+}
+
 interface UserFormValues {
   email: string;
   full_name: string;
   role: UserRole;
   password?: string;
   department?: string;
-}
-
-interface UserData {
-  id: string;
-  full_name: string | null;
-  department: string | null;
-  role: UserRole;
-  status: string | null;
-  email?: string;
 }
 
 const UserFormSchema = z.object({
@@ -71,8 +73,8 @@ const UserFormSchema = z.object({
 
 export function UserManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserData | null>(null);
-  const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -89,26 +91,37 @@ export function UserManagement() {
         throw error;
       }
 
+      const enrichedProfiles: User[] = [];
+      
       if (profiles && profiles.length > 0) {
-        const userEmailMap = new Map<string, string>();
-        
         const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
         
         if (authError) {
           console.error("Error fetching auth users:", authError);
-        } else if (authUsers) {
+          return profiles.map(profile => ({
+            ...profile,
+            email: undefined
+          })) as User[];
+        }
+
+        const userEmailMap = new Map<string, string>();
+        if (authUsers && authUsers.users) {
           authUsers.users.forEach(user => {
             userEmailMap.set(user.id, user.email || "");
           });
         }
 
-        return profiles.map(profile => ({
-          ...profile,
-          email: userEmailMap.get(profile.id) || ""
-        }));
+        profiles.forEach(profile => {
+          enrichedProfiles.push({
+            ...profile,
+            email: userEmailMap.get(profile.id) || undefined
+          });
+        });
+        
+        return enrichedProfiles;
       }
 
-      return profiles || [];
+      return profiles as User[];
     },
   });
 
@@ -253,7 +266,7 @@ export function UserManagement() {
     },
   });
 
-  const handleOpenDialog = (user?: UserData) => {
+  const handleOpenDialog = (user?: User) => {
     if (user) {
       setEditingUser(user);
       form.reset({
@@ -284,7 +297,7 @@ export function UserManagement() {
     }
   };
 
-  const handleOpenDeleteDialog = (user: UserData) => {
+  const handleOpenDeleteDialog = (user: User) => {
     setDeletingUser(user);
     setIsDeleteDialogOpen(true);
   };
@@ -295,7 +308,7 @@ export function UserManagement() {
     }
   };
 
-  const handleToggleStatus = (user: UserData) => {
+  const handleToggleStatus = (user: User) => {
     toggleUserStatusMutation.mutate(user);
   };
 

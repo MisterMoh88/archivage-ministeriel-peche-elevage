@@ -6,7 +6,7 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 export default function Admin() {
   const { user } = useAuth();
   // La vérification admin doit rester côté page pour la sécurité
-  const isAdmin = user?.email === "malitechholding@gmail.com";
+  const isAdmin = user?.role === "admin";
 
   if (!isAdmin) {
     return <Navigate to="/" replace />;
