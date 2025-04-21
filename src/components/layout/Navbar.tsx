@@ -17,7 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
 
   return (
     <header className="bg-background border-b border-border px-4 py-3 sticky top-0 z-30">
@@ -61,8 +61,11 @@ export default function Navbar() {
               <DropdownMenuLabel>
                 {user?.email && (
                   <div className="flex flex-col">
-                    <span>{user.email}</span>
-                    <span className="text-xs text-muted-foreground mt-1">Utilisateur</span>
+                    <span>{userProfile?.full_name || user.email}</span>
+                    <span className="text-xs text-muted-foreground mt-1">
+                      {userProfile?.role === 'admin' ? 'Administrateur' : 
+                       userProfile?.role === 'archiviste' ? 'Archiviste' : 'Utilisateur'}
+                    </span>
                   </div>
                 )}
               </DropdownMenuLabel>
@@ -73,6 +76,11 @@ export default function Navbar() {
               <DropdownMenuItem asChild>
                 <Link to="/settings">Paramètres</Link>
               </DropdownMenuItem>
+              {userProfile?.role === 'admin' && (
+                <DropdownMenuItem asChild>
+                  <Link to="/admin">Administration</Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => signOut()} className="text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" /> Déconnexion
