@@ -6,12 +6,12 @@ import { YearlyDistribution } from "@/components/stats/YearlyDistribution";
 import { fetchDocumentsByCategory, fetchDocumentsByYear } from "@/services/stats";
 
 export default function Stats() {
-  const { data: documentsByCategory = [] } = useQuery({
+  const { data: documentsByCategory = [], isLoading: isCategoryLoading } = useQuery({
     queryKey: ['documentsByCategory'],
     queryFn: fetchDocumentsByCategory
   });
 
-  const { data: documentsByYear = [] } = useQuery({
+  const { data: documentsByYear = [], isLoading: isYearlyLoading } = useQuery({
     queryKey: ['documentsByYear'],
     queryFn: fetchDocumentsByYear
   });
@@ -27,8 +27,17 @@ export default function Stats() {
 
         <TabsContent value="documents" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
-            <CategoryDistribution data={documentsByCategory} />
-            <YearlyDistribution data={documentsByYear} />
+            {isCategoryLoading ? (
+              <div className="h-[400px] flex items-center justify-center">Chargement...</div>
+            ) : (
+              <CategoryDistribution data={documentsByCategory} />
+            )}
+            
+            {isYearlyLoading ? (
+              <div className="h-[400px] flex items-center justify-center">Chargement...</div>
+            ) : (
+              <YearlyDistribution data={documentsByYear} />
+            )}
           </div>
         </TabsContent>
       </Tabs>

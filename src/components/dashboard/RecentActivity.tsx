@@ -1,14 +1,7 @@
 
 import { FileText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-interface Activity {
-  id: string;
-  action_type: string;
-  documents: { title: string };
-  profiles: { full_name: string };
-  performed_at: string;
-}
+import { Activity } from "@/services/dashboard";
 
 interface RecentActivityProps {
   activities: Activity[];
@@ -35,10 +28,10 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium">
-                  {item.action_type}: {item.documents.title}
+                  {item.action_type}: {item.document_title}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Par {item.profiles.full_name} • {new Date(item.performed_at).toLocaleString()}
+                  Par {item.user_name} • {new Date(item.performed_at).toLocaleString()}
                 </p>
               </div>
             </div>

@@ -1,7 +1,18 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export const fetchDocumentsByCategory = async () => {
+export interface CategoryDataItem {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface YearlyDataItem {
+  name: string;
+  [key: string]: string | number;
+}
+
+export const fetchDocumentsByCategory = async (): Promise<CategoryDataItem[]> => {
   const { data } = await supabase
     .from('documents')
     .select(`
@@ -10,7 +21,7 @@ export const fetchDocumentsByCategory = async () => {
 
   if (!data) return [];
 
-  const categoryCount = data.reduce((acc: any, doc) => {
+  const categoryCount = data.reduce((acc: Record<string, number>, doc) => {
     const category = doc.document_categories.name;
     acc[category] = (acc[category] || 0) + 1;
     return acc;
@@ -26,12 +37,12 @@ export const fetchDocumentsByCategory = async () => {
 
   return Object.entries(categoryCount).map(([name, value]) => ({
     name,
-    value,
+    value: Number(value), // Ensure value is a number
     color: colors[name as keyof typeof colors] || "#6B7280"
   }));
 };
 
-export const fetchDocumentsByYear = async () => {
+export const fetchDocumentsByYear = async (): Promise<YearlyDataItem[]> => {
   const { data } = await supabase
     .from('documents')
     .select(`
@@ -41,9 +52,11 @@ export const fetchDocumentsByYear = async () => {
 
   if (!data) return [];
 
-  const yearlyData: any = {};
+  const yearlyData: Record<string, YearlyDataItem> = {};
   
   data.forEach(doc => {
+    if (!doc.document_date) return; // Skip if document_date is null
+    
     const year = new Date(doc.document_date).getFullYear().toString();
     const category = doc.document_categories.name;
     
@@ -58,7 +71,7 @@ export const fetchDocumentsByYear = async () => {
       };
     }
     
-    const categoryMapping: any = {
+    const categoryMapping: Record<string, string> = {
       "Documents administratifs et réglementaires": "Documents administratifs",
       "Documents techniques et spécialisés": "Documents techniques",
       "Documents financiers et comptables": "Documents financiers",
@@ -66,7 +79,10 @@ export const fetchDocumentsByYear = async () => {
       "Archives et documentation historique": "Archives historiques",
     };
     
-    yearlyData[year][categoryMapping[category]]++;
+    const mappedCategory = categoryMapping[category] || category;
+    if (mappedCategory in yearlyData[year]) {
+      yearlyData[year][mappedCategory] = Number(yearlyData[year][mappedCategory]) + 1;
+    }
   });
 
   return Object.values(yearlyData);

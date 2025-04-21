@@ -1,15 +1,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
-
-interface CategoryData {
-  name: string;
-  value: number;
-  color: string;
-}
+import { CategoryDataItem } from "@/services/stats";
 
 interface CategoryDistributionProps {
-  data: CategoryData[];
+  data: CategoryDataItem[];
 }
 
 export function CategoryDistribution({ data }: CategoryDistributionProps) {

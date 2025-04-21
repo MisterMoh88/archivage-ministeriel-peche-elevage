@@ -1,19 +1,10 @@
 
 import { FileText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-interface Document {
-  id: string;
-  title: string;
-  document_type: string;
-  document_date: string;
-  document_categories: {
-    name: string;
-  };
-}
+import { RecentDocument } from "@/services/dashboard";
 
 interface RecentDocumentsProps {
-  documents: Document[];
+  documents: RecentDocument[];
   isLoading: boolean;
 }
 
@@ -39,7 +30,7 @@ export function RecentDocuments({ documents, isLoading }: RecentDocumentsProps) 
                 <p className="text-sm font-medium">{doc.title}</p>
                 <div className="flex gap-2 text-xs">
                   <span className="rounded-full bg-ministry-blue/20 px-2 py-0.5 text-ministry-darkBlue">
-                    {doc.document_categories?.name}
+                    {doc.category_name}
                   </span>
                   <span className="text-muted-foreground">
                     {doc.document_type} • {new Date(doc.document_date).toLocaleDateString()}
