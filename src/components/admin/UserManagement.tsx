@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -53,6 +52,15 @@ interface UserFormValues {
   department?: string;
 }
 
+interface UserData {
+  id: string;
+  full_name: string | null;
+  department: string | null;
+  role: UserRole;
+  status: string | null;
+  email?: string;
+}
+
 const UserFormSchema = z.object({
   email: z.string().email("Adresse e-mail invalide"),
   full_name: z.string().min(3, "Le nom complet doit contenir au moins 3 caractères"),
@@ -63,24 +71,41 @@ const UserFormSchema = z.object({
 
 export function UserManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<any | null>(null);
-  const [deletingUser, setDeletingUser] = useState<any | null>(null);
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      // Fetch profiles with email from auth.users via relationship 'user'
       const { data: profiles, error } = await supabase
         .from("profiles")
-        // Select all profile fields plus nested 'user' with email from auth.users
-        .select("*, user:auth.users(email)")
+        .select("*")
         .order("full_name");
 
       if (error) {
         toast.error(`Erreur lors du chargement des utilisateurs: ${error.message}`);
         throw error;
+      }
+
+      if (profiles && profiles.length > 0) {
+        const userEmailMap = new Map<string, string>();
+        
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          console.error("Error fetching auth users:", authError);
+        } else if (authUsers) {
+          authUsers.users.forEach(user => {
+            userEmailMap.set(user.id, user.email || "");
+          });
+        }
+
+        return profiles.map(profile => ({
+          ...profile,
+          email: userEmailMap.get(profile.id) || ""
+        }));
       }
 
       return profiles || [];
@@ -99,7 +124,6 @@ export function UserManagement() {
 
   const createUserMutation = useMutation({
     mutationFn: async (values: UserFormValues) => {
-      // Création de l'utilisateur dans auth
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: values.email,
         password: values.password,
@@ -113,7 +137,6 @@ export function UserManagement() {
         throw authError;
       }
 
-      // Mise à jour du profil avec les rôles et autres infos
       if (authData.user) {
         const { error: profileError } = await supabase
           .from("profiles")
@@ -147,7 +170,6 @@ export function UserManagement() {
     mutationFn: async (values: UserFormValues) => {
       if (!editingUser) return;
 
-      // Mise à jour des propriétés du profil
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -161,7 +183,6 @@ export function UserManagement() {
         throw profileError;
       }
 
-      // Si un nouveau mot de passe est fourni, mise à jour du mot de passe
       if (values.password) {
         const { error: authError } = await supabase.auth.admin.updateUserById(
           editingUser.id,
@@ -232,19 +253,17 @@ export function UserManagement() {
     },
   });
 
-  const handleOpenDialog = (user?: any) => {
+  const handleOpenDialog = (user?: UserData) => {
     if (user) {
-      // Mode édition
       setEditingUser(user);
       form.reset({
-        email: user.user?.email || "",
+        email: user.email || "",
         full_name: user.full_name || "",
         role: user.role,
         department: user.department || "",
         password: "",
       });
     } else {
-      // Mode création
       setEditingUser(null);
       form.reset({
         email: "",
@@ -265,7 +284,7 @@ export function UserManagement() {
     }
   };
 
-  const handleOpenDeleteDialog = (user: any) => {
+  const handleOpenDeleteDialog = (user: UserData) => {
     setDeletingUser(user);
     setIsDeleteDialogOpen(true);
   };
@@ -276,7 +295,7 @@ export function UserManagement() {
     }
   };
 
-  const handleToggleStatus = (user: any) => {
+  const handleToggleStatus = (user: UserData) => {
     toggleUserStatusMutation.mutate(user);
   };
 
@@ -329,7 +348,7 @@ export function UserManagement() {
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.full_name || "Non renseigné"}</TableCell>
-                    <TableCell>{user.user?.email || "Non renseigné"}</TableCell>
+                    <TableCell>{user.email || "Non renseigné"}</TableCell>
                     <TableCell>
                       <Badge variant={getRoleBadgeVariant(user.role as UserRole)}>
                         {user.role === "admin" 
@@ -391,7 +410,6 @@ export function UserManagement() {
         </div>
       )}
 
-      {/* Dialogue de création/édition d'utilisateur */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -523,7 +541,6 @@ export function UserManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialogue de confirmation de suppression */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
