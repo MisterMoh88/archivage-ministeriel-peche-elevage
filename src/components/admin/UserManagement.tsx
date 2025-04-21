@@ -71,9 +71,11 @@ export function UserManagement() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
+      // Fetch profiles with email from auth.users via relationship 'user'
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("*")
+        // Select all profile fields plus nested 'user' with email from auth.users
+        .select("*, user:auth.users(email)")
         .order("full_name");
 
       if (error) {
@@ -235,10 +237,11 @@ export function UserManagement() {
       // Mode édition
       setEditingUser(user);
       form.reset({
-        email: user.email || "",
+        email: user.user?.email || "",
         full_name: user.full_name || "",
         role: user.role,
         department: user.department || "",
+        password: "",
       });
     } else {
       // Mode création
@@ -326,7 +329,7 @@ export function UserManagement() {
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.full_name || "Non renseigné"}</TableCell>
-                    <TableCell>{user.email || "Non renseigné"}</TableCell>
+                    <TableCell>{user.user?.email || "Non renseigné"}</TableCell>
                     <TableCell>
                       <Badge variant={getRoleBadgeVariant(user.role as UserRole)}>
                         {user.role === "admin" 
