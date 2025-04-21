@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -28,6 +27,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 const generalSettingsSchema = z.object({
   systemName: z.string().min(2, "Le nom du système doit contenir au moins 2 caractères"),
@@ -60,7 +60,6 @@ type FeaturesSettingsValues = z.infer<typeof featuresSettingsSchema>;
 export function SystemSettings() {
   const [accentColor, setAccentColor] = useState("blue");
   
-  // Formulaire pour les paramètres généraux
   const generalForm = useForm<GeneralSettingsValues>({
     resolver: zodResolver(generalSettingsSchema),
     defaultValues: {
@@ -72,7 +71,6 @@ export function SystemSettings() {
     },
   });
 
-  // Formulaire pour les paramètres de conservation
   const retentionForm = useForm<RetentionSettingsValues>({
     resolver: zodResolver(retentionSettingsSchema),
     defaultValues: {
@@ -83,7 +81,6 @@ export function SystemSettings() {
     },
   });
 
-  // Formulaire pour les paramètres de fonctionnalités
   const featuresForm = useForm<FeaturesSettingsValues>({
     resolver: zodResolver(featuresSettingsSchema),
     defaultValues: {
@@ -99,19 +96,16 @@ export function SystemSettings() {
   const onGeneralSubmit = (data: GeneralSettingsValues) => {
     console.log("Paramètres généraux mis à jour:", data);
     toast.success("Paramètres généraux mis à jour avec succès");
-    // Dans une vraie implémentation, ces données seraient enregistrées dans une base de données
   };
 
   const onRetentionSubmit = (data: RetentionSettingsValues) => {
     console.log("Paramètres de conservation mis à jour:", data);
     toast.success("Paramètres de conservation mis à jour avec succès");
-    // Dans une vraie implémentation, ces données seraient enregistrées dans une base de données
   };
 
   const onFeaturesSubmit = (data: FeaturesSettingsValues) => {
     console.log("Paramètres de fonctionnalités mis à jour:", data);
     toast.success("Paramètres de fonctionnalités mis à jour avec succès");
-    // Dans une vraie implémentation, ces données seraient enregistrées dans une base de données
   };
 
   return (
@@ -126,7 +120,6 @@ export function SystemSettings() {
           <TabsTrigger value="appearance">Apparence</TabsTrigger>
         </TabsList>
         
-        {/* Onglet Général */}
         <TabsContent value="general">
           <Card>
             <CardHeader>
@@ -259,7 +252,6 @@ export function SystemSettings() {
           </Card>
         </TabsContent>
         
-        {/* Onglet Conservation */}
         <TabsContent value="retention">
           <Card>
             <CardHeader>
@@ -356,7 +348,6 @@ export function SystemSettings() {
           </Card>
         </TabsContent>
         
-        {/* Onglet Fonctionnalités */}
         <TabsContent value="features">
           <Card>
             <CardHeader>
@@ -507,7 +498,6 @@ export function SystemSettings() {
           </Card>
         </TabsContent>
         
-        {/* Onglet Apparence */}
         <TabsContent value="appearance">
           <Card>
             <CardHeader>
