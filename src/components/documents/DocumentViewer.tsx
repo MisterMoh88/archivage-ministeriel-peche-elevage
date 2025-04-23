@@ -9,6 +9,7 @@ import { getDocumentHistory } from "@/services/documents/historyService";
 import { DocumentPreview } from "./DocumentPreview";
 import { DocumentDetails } from "./DocumentDetails";
 import { DocumentHistory } from "./DocumentHistory";
+import { PDFViewer } from "./PDFViewer";
 import { toast } from "sonner";
 import { handleDownload } from "@/utils/documentUtils";
 
@@ -19,7 +20,6 @@ interface DocumentViewerProps {
 }
 
 export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProps) => {
-  // Return early if document is null or dialog is not open
   if (!document || !isOpen) return null;
   
   const [activeTab, setActiveTab] = useState<string>("preview");
@@ -43,6 +43,8 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
     }
   };
 
+  const isPDF = document.file_type?.toLowerCase().includes('pdf');
+
   return (
     <Dialog open={true}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
@@ -61,7 +63,13 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
           </TabsList>
 
           <TabsContent value="preview" className="flex-1 overflow-auto">
-            <DocumentPreview document={document} />
+            {isPDF ? (
+              <PDFViewer 
+                fileUrl={document.file_path ? `https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents/${document.file_path}` : null} 
+              />
+            ) : (
+              <DocumentPreview document={document} />
+            )}
           </TabsContent>
 
           <TabsContent value="details" className="space-y-4">
