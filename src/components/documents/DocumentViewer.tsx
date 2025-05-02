@@ -44,9 +44,12 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
   };
 
   const isPDF = document.file_type?.toLowerCase().includes('pdf');
+  const documentUrl = document.file_path ? 
+    `https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents/${document.file_path}` : 
+    null;
 
   return (
-    <Dialog open={true}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{document.title}</DialogTitle>
@@ -62,11 +65,9 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
             <TabsTrigger value="history">Historique</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="preview" className="flex-1 overflow-auto">
+          <TabsContent value="preview" className="flex-1 overflow-auto relative">
             {isPDF ? (
-              <PDFViewer 
-                fileUrl={document.file_path ? `https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents/${document.file_path}` : null} 
-              />
+              <PDFViewer fileUrl={documentUrl} />
             ) : (
               <DocumentPreview document={document} />
             )}
