@@ -89,7 +89,25 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
           defaultScale={1}
           theme="light"
           onDocumentLoad={handleLoadSuccess}
-          renderError={handleLoadError}
+          renderError={() => {
+            // This function must return a React element
+            handleLoadError();
+            return (
+              <div className="flex flex-col items-center justify-center h-full">
+                <AlertCircle className="h-12 w-12 text-destructive mb-2" />
+                <p className="text-destructive font-medium">Erreur de chargement du PDF</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-4" 
+                  onClick={handleRetry}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Réessayer
+                </Button>
+              </div>
+            );
+          }}
         />
       </Worker>
       {isLoading && (
