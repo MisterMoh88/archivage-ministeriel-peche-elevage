@@ -89,7 +89,7 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
           defaultScale={1}
           theme="light"
           onDocumentLoad={handleLoadSuccess}
-          onError={handleLoadError}
+          renderError={handleLoadError}
         />
       </Worker>
       {isLoading && (
