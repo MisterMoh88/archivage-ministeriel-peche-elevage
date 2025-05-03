@@ -19,13 +19,13 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
 
-  // Réinitialiser l'état d'erreur quand l'URL change et ajouter un paramètre pour contourner le cache
+  // Reset error state when URL changes and add parameter to bypass cache
   useEffect(() => {
     if (fileUrl) {
       setLoadError(null);
       setIsLoading(true);
       
-      // Ajouter un paramètre de timestamp pour éviter les problèmes de mise en cache
+      // Add timestamp parameter to avoid caching issues
       const urlWithCacheBuster = `${fileUrl}?t=${Date.now()}`;
       setCurrentUrl(urlWithCacheBuster);
     } else {
@@ -46,7 +46,7 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
   const handleRetry = () => {
     setLoadError(null);
     setIsLoading(true);
-    // Forcer le rechargement en ajoutant un timestamp à l'URL
+    // Force reload by adding timestamp to URL
     if (fileUrl) {
       const refreshedUrl = `${fileUrl}?t=${Date.now()}`;
       setCurrentUrl(refreshedUrl);
@@ -86,11 +86,14 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
     );
   }
 
+  // Use empty string as fallback instead of null to prevent "length of null" errors
+  const safeCurrentUrl = currentUrl || '';
+
   return (
     <div className="h-[60vh] border rounded-md overflow-hidden bg-background relative">
       <Worker workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}>
         <Viewer
-          fileUrl={currentUrl}
+          fileUrl={safeCurrentUrl}
           plugins={[defaultLayoutPluginInstance]}
           defaultScale={1}
           theme="light"
