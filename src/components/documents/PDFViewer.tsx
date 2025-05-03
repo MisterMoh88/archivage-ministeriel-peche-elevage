@@ -17,11 +17,20 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState<string | null>(null);
 
-  // Réinitialiser l'état d'erreur quand l'URL change
+  // Réinitialiser l'état d'erreur quand l'URL change et ajouter un paramètre pour contourner le cache
   useEffect(() => {
-    setLoadError(null);
-    setIsLoading(true);
+    if (fileUrl) {
+      setLoadError(null);
+      setIsLoading(true);
+      
+      // Ajouter un paramètre de timestamp pour éviter les problèmes de mise en cache
+      const urlWithCacheBuster = `${fileUrl}?t=${Date.now()}`;
+      setCurrentUrl(urlWithCacheBuster);
+    } else {
+      setCurrentUrl(null);
+    }
   }, [fileUrl]);
 
   const handleLoadError = () => {
@@ -37,13 +46,10 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
   const handleRetry = () => {
     setLoadError(null);
     setIsLoading(true);
-    // Force le rechargement en ajoutant un timestamp à l'URL
-    const refreshedUrl = fileUrl ? `${fileUrl}?t=${Date.now()}` : null;
-    if (refreshedUrl) {
-      const img = new Image();
-      img.onload = () => setIsLoading(false);
-      img.onerror = handleLoadError;
-      img.src = refreshedUrl;
+    // Forcer le rechargement en ajoutant un timestamp à l'URL
+    if (fileUrl) {
+      const refreshedUrl = `${fileUrl}?t=${Date.now()}`;
+      setCurrentUrl(refreshedUrl);
     }
   };
 
@@ -81,10 +87,10 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
   }
 
   return (
-    <div className="h-[60vh] border rounded-md overflow-hidden bg-background">
+    <div className="h-[60vh] border rounded-md overflow-hidden bg-background relative">
       <Worker workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}>
         <Viewer
-          fileUrl={fileUrl}
+          fileUrl={currentUrl}
           plugins={[defaultLayoutPluginInstance]}
           defaultScale={1}
           theme="light"

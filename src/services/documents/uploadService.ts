@@ -17,6 +17,16 @@ interface UploadDocumentProps {
   marketType?: "DC" | "DRPR" | "DRPO" | "AAO";
 }
 
+// Fonction pour assainir le nom du fichier en remplaçant les caractères spéciaux
+const sanitizeFileName = (fileName: string): string => {
+  // Remplacer les espaces et les caractères spéciaux par des underscores
+  return fileName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Supprimer les accents
+    .replace(/[^a-zA-Z0-9_.-]/g, "_") // Remplacer les caractères spéciaux par des underscores
+    .replace(/_{2,}/g, "_"); // Éviter les underscores multiples
+};
+
 export const uploadDocument = async (documentData: UploadDocumentProps) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -26,14 +36,23 @@ export const uploadDocument = async (documentData: UploadDocumentProps) => {
 
     // 1. Upload du fichier
     const fileExt = documentData.file.name.split('.').pop();
-    const fileName = `${Date.now()}_${documentData.referenceNumber}.${fileExt}`;
+    const originalName = documentData.file.name.split('.')[0];
+    
+    // Utiliser le nom sanitisé pour le fichier
+    const sanitizedName = sanitizeFileName(originalName);
+    const uniquePrefix = Date.now();
+    const fileName = `${uniquePrefix}_${sanitizedName}.${fileExt}`;
+    
+    // Créer un chemin de fichier sécurisé
     const filePath = `${documentData.categoryId}/${fileName}`;
     
     console.log("Début de l'upload du fichier", {
       bucket: 'documents',
       path: filePath,
       fileSize: documentData.file.size,
-      fileType: documentData.file.type
+      fileType: documentData.file.type,
+      originalName: documentData.file.name,
+      sanitizedName: fileName
     });
     
     const { error: uploadError, data: uploadData } = await supabase.storage
@@ -62,6 +81,7 @@ export const uploadDocument = async (documentData: UploadDocumentProps) => {
       file_path: filePath,
       file_size: documentData.file.size,
       file_type: documentData.file.type,
+      original_filename: documentData.file.name, // Garder le nom original pour référence
       budget_year: documentData.budgetYear,
       budget_program: documentData.budgetProgram,
       market_type: documentData.marketType,
