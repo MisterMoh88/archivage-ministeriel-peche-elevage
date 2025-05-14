@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw, File } from "lucide-react";
 import { toast } from "sonner";
 import { Document } from "@/types/document";
-import { getDocumentPreviewUrl } from "@/services/documents/previewService";
+import { getDocumentPreviewUrl, checkFileExists } from "@/services/documents/previewService";
 import { logDocumentView } from "@/utils/documentUtils";
 
 interface DocumentPreviewProps {
@@ -16,6 +16,8 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
 
   const isPdf = document.file_type?.toLowerCase().includes("pdf");
   const isImage = document.file_type?.toLowerCase().includes("image") || 
@@ -40,12 +42,28 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
         throw new Error("Chemin du fichier manquant");
       }
       
-      // Utiliser notre nouveau service pour obtenir l'URL publique
+      // Vérifier si le fichier existe physiquement dans le bucket
+      const exists = await checkFileExists(document.file_path);
+      if (!exists) {
+        throw new Error("Ce document n'existe plus dans le système de stockage");
+      }
+      
+      // Utiliser notre service pour obtenir l'URL publique
       const url = await getDocumentPreviewUrl(document.file_path);
       setPublicUrl(url);
+      setRetryCount(0); // Reset retry count on success
     } catch (err: any) {
       console.error("Erreur lors de la récupération de l'URL du document:", err);
       setError(err.message || "Erreur lors de la récupération du document");
+      
+      // Auto-retry logic for specific errors
+      if (retryCount < maxRetries && !err.message.includes("n'existe plus")) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          console.log(`Tentative automatique ${retryCount + 1}/${maxRetries}`);
+          fetchPublicUrl();
+        }, 2000); // Retry after 2 seconds
+      }
     } finally {
       setLoading(false);
     }
@@ -60,13 +78,16 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
   };
 
   const handleRetry = () => {
+    setRetryCount(0);
     fetchPublicUrl();
     toast.info("Tentative de rechargement du document...");
   };
 
   const handleReportIssue = () => {
-    // Simuler un signalement à l'administrateur
-    toast.success("Le problème a été signalé à l'administrateur");
+    // Simuler un signalement à l'administrateur avec plus de détails
+    toast.success("Le problème a été signalé à l'administrateur", {
+      description: `Document: ${document.title}, Type: ${document.file_type}, ID: ${document.id}`,
+    });
   };
 
   if (loading) {

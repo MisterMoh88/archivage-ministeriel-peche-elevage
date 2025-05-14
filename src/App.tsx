@@ -22,13 +22,16 @@ import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
-// Create a new QueryClient for React Query
+// Create a new QueryClient with optimized configuration to prevent excessive refreshes
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 30000,
+      staleTime: 1000 * 60 * 30, // 30 minutes
+      refetchInterval: false,     // Disable automatic refetching
+      refetchOnMount: true,       // Only refetch on component mount
+      refetchOnReconnect: false,  // Don't refetch on reconnect
     },
   },
 });

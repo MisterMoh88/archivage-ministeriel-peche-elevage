@@ -5,9 +5,10 @@ import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { checkFileExists } from "@/services/documents/previewService";
+import { toast } from "sonner";
 
 interface PDFViewerProps {
   fileUrl: string | null;
@@ -18,29 +19,79 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+
+  // Fonction pour vérifier si le fichier existe avant d'essayer de le charger
+  const verifyFileAndPrepareUrl = async (url: string | null) => {
+    if (!url) return null;
+    
+    setIsLoading(true);
+    
+    try {
+      // Extraire le chemin du fichier de l'URL
+      const filePath = url.includes('documents/') 
+        ? url.split('documents/')[1].split('?')[0] 
+        : null;
+      
+      if (!filePath) {
+        setLoadError("Chemin de fichier invalide");
+        setIsLoading(false);
+        return null;
+      }
+      
+      // Vérifier si le fichier existe
+      const exists = await checkFileExists(filePath);
+      
+      if (!exists) {
+        setLoadError("Le fichier demandé n'existe plus ou est inaccessible");
+        setIsLoading(false);
+        return null;
+      }
+      
+      // Ajouter timestamp pour éviter les problèmes de cache
+      const urlWithCacheBuster = `${url.split('?')[0]}?t=${Date.now()}`;
+      return urlWithCacheBuster;
+    } catch (error) {
+      console.error("Erreur lors de la vérification du fichier:", error);
+      return url; // Continuer avec l'URL originale si la vérification échoue
+    }
+  };
 
   // Reset error state when URL changes and add parameter to bypass cache
   useEffect(() => {
-    if (fileUrl) {
-      setLoadError(null);
-      setIsLoading(true);
-      
-      // Add timestamp parameter to avoid caching issues
-      const urlWithCacheBuster = `${fileUrl}?t=${Date.now()}`;
-      setCurrentUrl(urlWithCacheBuster);
-    } else {
-      setCurrentUrl(null);
-    }
+    const prepareUrl = async () => {
+      if (fileUrl) {
+        setLoadError(null);
+        setIsLoading(true);
+        
+        const preparedUrl = await verifyFileAndPrepareUrl(fileUrl);
+        setCurrentUrl(preparedUrl);
+      } else {
+        setCurrentUrl(null);
+        setIsLoading(false);
+      }
+    };
+    
+    prepareUrl();
   }, [fileUrl]);
 
   const handleLoadError = () => {
-    setLoadError("Impossible de charger le document PDF. Vérifiez votre connexion ou essayez à nouveau plus tard.");
-    setIsLoading(false);
+    if (retryCount < maxRetries) {
+      // Auto-retry logic
+      console.log(`Tentative automatique ${retryCount + 1}/${maxRetries}`);
+      setRetryCount(prev => prev + 1);
+      handleRetry();
+    } else {
+      setLoadError("Impossible de charger le document PDF après plusieurs tentatives. Vérifiez votre connexion ou essayez à nouveau plus tard.");
+      setIsLoading(false);
+    }
   };
 
   const handleLoadSuccess = () => {
     setLoadError(null);
     setIsLoading(false);
+    setRetryCount(0); // Reset retry count on success
   };
 
   const handleRetry = () => {
@@ -48,8 +99,9 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
     setIsLoading(true);
     // Force reload by adding timestamp to URL
     if (fileUrl) {
-      const refreshedUrl = `${fileUrl}?t=${Date.now()}`;
+      const refreshedUrl = `${fileUrl.split('?')[0]}?t=${Date.now()}_${Math.random()}`;
       setCurrentUrl(refreshedUrl);
+      toast.info("Tentative de rechargement du document...");
     }
   };
 

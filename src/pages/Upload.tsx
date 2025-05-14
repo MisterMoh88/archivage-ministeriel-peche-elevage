@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { uploadDocument } from "@/services/documents/uploadService";
+import { uploadDocument, validateDocumentFile } from "@/services/uploadService";
 import { getDocumentCategories } from "@/services/documents/categoryService";
 import { toast } from "sonner";
 import { BasicInfoFields } from "@/components/upload/BasicInfoFields";
@@ -31,8 +31,11 @@ export default function Upload() {
   const [isPublicMarket, setIsPublicMarket] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
-  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors, isValid } } = useForm({
+    mode: "onChange" // Valider les champs en temps réel
+  });
 
   const selectedType = watch("documentType");
 
@@ -43,6 +46,7 @@ export default function Upload() {
         setCategories(categoriesData);
       } catch (error) {
         console.error("Erreur lors de la récupération des catégories:", error);
+        toast.error("Impossible de charger les catégories de documents");
       }
     };
 
@@ -55,22 +59,37 @@ export default function Upload() {
 
   const onSubmit = async (data: any) => {
     if (!selectedFile) {
+      setFileError("Veuillez sélectionner un fichier");
       toast.error("Veuillez sélectionner un fichier");
+      return;
+    }
+
+    // Valider le fichier avant de continuer
+    const fileValidation = validateDocumentFile(selectedFile);
+    if (!fileValidation.valid) {
+      setFileError(fileValidation.message);
+      toast.error(fileValidation.message);
       return;
     }
 
     try {
       setIsUploading(true);
+      setFileError(null);
+      
       await uploadDocument({
         ...data,
         file: selectedFile,
       });
       
-      toast.success("Document archivé avec succès");
+      toast.success("Document archivé avec succès", {
+        description: `Le document "${data.title}" a été ajouté à la catégorie sélectionnée.`
+      });
+      
       reset();
       setSelectedFile(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors de l'upload:", error);
+      toast.error(error.message || "Erreur lors de l'archivage du document");
     } finally {
       setIsUploading(false);
     }
@@ -78,17 +97,26 @@ export default function Upload() {
 
   const handleFileChange = (file: File | null) => {
     setSelectedFile(file);
+    setFileError(null);
+    
+    if (file) {
+      // Valider immédiatement le fichier
+      const validation = validateDocumentFile(file);
+      if (!validation.valid) {
+        setFileError(validation.message);
+      }
+    }
   };
 
   // Register form fields for react-hook-form
   useEffect(() => {
-    register("title", { required: true });
-    register("referenceNumber", { required: true });
-    register("documentDate", { required: true });
+    register("title", { required: "Le titre est requis" });
+    register("referenceNumber", { required: "La référence est requise" });
+    register("documentDate", { required: "La date du document est requise" });
     register("issuingDepartment");
     register("description");
-    register("categoryId", { required: true });
-    register("documentType", { required: true });
+    register("categoryId", { required: "La catégorie est requise" });
+    register("documentType", { required: "Le type de document est requis" });
     register("budgetYear");
     register("budgetProgram");
     register("marketType");
@@ -130,13 +158,20 @@ export default function Upload() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <FileUploadArea onFileChange={handleFileChange} />
+              <FileUploadArea 
+                onFileChange={handleFileChange} 
+                error={fileError}
+              />
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" type="button" onClick={() => reset()}>Annuler</Button>
+              <Button variant="outline" type="button" onClick={() => {
+                reset();
+                setSelectedFile(null);
+                setFileError(null);
+              }}>Annuler</Button>
               <Button 
                 type="submit" 
-                disabled={isUploading || !selectedFile}
+                disabled={isUploading || !selectedFile || !!fileError || !isValid}
                 className="bg-ministry-blue hover:bg-ministry-darkBlue"
               >
                 {isUploading ? (
@@ -154,4 +189,4 @@ export default function Upload() {
       </div>
     </div>
   );
-}
+};

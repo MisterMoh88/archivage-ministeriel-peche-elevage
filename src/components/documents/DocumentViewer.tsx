@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Document } from "@/types/document";
@@ -12,6 +12,7 @@ import { DocumentHistory } from "./DocumentHistory";
 import { PDFViewer } from "./PDFViewer";
 import { toast } from "sonner";
 import { handleDownload } from "@/utils/documentUtils";
+import { checkFileExists } from "@/services/documents/previewService";
 
 interface DocumentViewerProps {
   document: Document | null;
@@ -23,12 +24,27 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
   if (!document || !isOpen) return null;
   
   const [activeTab, setActiveTab] = useState<string>("preview");
+  const [documentExists, setDocumentExists] = useState<boolean>(true);
   
   const { data: documentHistory, isLoading: historyLoading } = useQuery({
     queryKey: ["documentHistory", document.id],
     queryFn: () => getDocumentHistory(document.id || ""),
     enabled: !!document && activeTab === "history",
   });
+
+  useEffect(() => {
+    // Vérifier si le document existe dans le storage
+    if (document && document.file_path) {
+      checkFileExists(document.file_path)
+        .then(exists => {
+          setDocumentExists(exists);
+        })
+        .catch(error => {
+          console.error("Erreur lors de la vérification du document:", error);
+          setDocumentExists(true); // Par défaut, on suppose que le document existe
+        });
+    }
+  }, [document]);
 
   const downloadDocument = () => {
     if (document && document.file_path) {
@@ -66,7 +82,20 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
           </TabsList>
 
           <TabsContent value="preview" className="flex-1 overflow-auto relative">
-            {isPDF ? (
+            {!documentExists ? (
+              <div className="flex flex-col items-center justify-center h-full p-4">
+                <p className="text-destructive font-medium mb-2">Ce document n'est plus disponible dans le stockage</p>
+                <p className="text-muted-foreground text-sm text-center mb-4">
+                  Le fichier a peut-être été supprimé ou déplacé.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => toast.info("Un administrateur a été notifié du problème")}
+                >
+                  Signaler le problème
+                </Button>
+              </div>
+            ) : isPDF ? (
               <PDFViewer fileUrl={documentUrl} />
             ) : (
               <DocumentPreview document={document} />
@@ -83,7 +112,7 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
         </Tabs>
 
         <DialogFooter className="space-x-2">
-          <Button variant="outline" onClick={downloadDocument}>Télécharger</Button>
+          <Button variant="outline" onClick={downloadDocument} disabled={!documentExists}>Télécharger</Button>
           <Button variant="outline" onClick={onClose}>Fermer</Button>
         </DialogFooter>
       </DialogContent>
