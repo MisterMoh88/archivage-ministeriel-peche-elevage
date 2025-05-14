@@ -32,12 +32,14 @@ export const getDocumentPreviewUrl = async (filePath: string): Promise<string> =
       // peut échouer dans certains cas même si le fichier existe
     }
     
-    const { data, error } = await supabase.storage
+    // Dans la nouvelle version de l'API Supabase, getPublicUrl ne renvoie pas d'erreur
+    // mais uniquement un objet avec la propriété publicUrl
+    const { data } = await supabase.storage
       .from('documents')
       .getPublicUrl(filePath);
       
-    if (error || !data.publicUrl) {
-      console.error("Erreur lors de l'obtention de l'URL:", error);
+    if (!data.publicUrl) {
+      console.error("Impossible d'obtenir l'URL du document");
       throw new Error("Impossible d'obtenir l'URL du document");
     }
     
