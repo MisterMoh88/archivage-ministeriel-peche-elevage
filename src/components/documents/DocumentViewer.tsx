@@ -59,10 +59,16 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
     }
   };
 
+  // Ensure we have a valid document URL - Fix for PDF viewer parameter error
   const isPDF = document.file_type?.toLowerCase().includes('pdf');
-  const documentUrl = document.file_path ? 
+  const documentUrl = (document.file_path && documentExists) ? 
     `https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents/${document.file_path}` : 
     null;
+
+  // Log the URL to help debug
+  useEffect(() => {
+    console.log("Document URL for viewer:", documentUrl);
+  }, [documentUrl]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

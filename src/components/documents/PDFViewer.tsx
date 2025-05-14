@@ -138,14 +138,25 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
     );
   }
 
-  // Use empty string as fallback instead of null to prevent "length of null" errors
-  const safeCurrentUrl = currentUrl || '';
+  // Critical fix: Don't render PDF viewer if URL is null or empty string
+  if (!currentUrl) {
+    return (
+      <div className="h-[60vh] border rounded-md overflow-hidden bg-background relative">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <RefreshCw className="h-8 w-8 animate-spin text-ministry-blue" />
+            <p className="mt-2 text-sm text-muted-foreground">Préparation du document...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[60vh] border rounded-md overflow-hidden bg-background relative">
       <Worker workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}>
         <Viewer
-          fileUrl={safeCurrentUrl}
+          fileUrl={currentUrl}
           plugins={[defaultLayoutPluginInstance]}
           defaultScale={1}
           theme="light"
