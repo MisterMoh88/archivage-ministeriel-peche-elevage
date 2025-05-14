@@ -13,12 +13,12 @@ export const getDocumentPreviewUrl = async (filePath: string): Promise<string> =
       throw new Error("Chemin du fichier non spécifié");
     }
     
-    const { data, error } = await supabase.storage
+    const { data } = await supabase.storage
       .from('documents')
       .getPublicUrl(filePath);
       
-    if (error || !data.publicUrl) {
-      throw error || new Error("Impossible d'obtenir l'URL du document");
+    if (!data.publicUrl) {
+      throw new Error("Impossible d'obtenir l'URL du document");
     }
     
     // Ajouter un paramètre anti-cache avec timestamp
