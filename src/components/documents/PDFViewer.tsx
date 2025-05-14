@@ -98,7 +98,7 @@ export const PDFViewer = ({ fileUrl }: PDFViewerProps) => {
           defaultScale={1}
           theme="light"
           onDocumentLoad={handleLoadSuccess}
-          renderError={() => {
+          renderError={(error) => {
             // This function must return a React element
             handleLoadError();
             return (

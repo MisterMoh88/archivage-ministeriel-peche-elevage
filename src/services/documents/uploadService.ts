@@ -24,7 +24,14 @@ const sanitizeFileName = (fileName: string): string => {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // Supprimer les accents
     .replace(/[^a-zA-Z0-9_.-]/g, "_") // Remplacer les caractères spéciaux par des underscores
-    .replace(/_{2,}/g, "_"); // Éviter les underscores multiples
+    .replace(/_{2,}/g, "_") // Éviter les underscores multiples
+    .replace(/[éèêë]/g, "e") // Remplacer les caractères accentués spécifiques
+    .replace(/[àâä]/g, "a")
+    .replace(/[ùûü]/g, "u")
+    .replace(/[îï]/g, "i")
+    .replace(/[ôö]/g, "o")
+    .replace(/[ç]/g, "c")
+    .replace(/[\s°]/g, "_"); // Remplacer les espaces et le symbole degré
 };
 
 export const uploadDocument = async (documentData: UploadDocumentProps) => {
@@ -36,7 +43,7 @@ export const uploadDocument = async (documentData: UploadDocumentProps) => {
 
     // 1. Upload du fichier
     const fileExt = documentData.file.name.split('.').pop();
-    const originalName = documentData.file.name.split('.')[0];
+    const originalName = documentData.file.name.split('.').slice(0, -1).join('.');
     
     // Utiliser le nom sanitisé pour le fichier
     const sanitizedName = sanitizeFileName(originalName);

@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw, File } from "lucide-react";
 import { toast } from "sonner";
 import { Document } from "@/types/document";
-import { supabase } from "@/integrations/supabase/client";
+import { getDocumentPreviewUrl } from "@/services/documents/previewService";
 import { logDocumentView } from "@/utils/documentUtils";
 
 interface DocumentPreviewProps {
@@ -16,11 +17,11 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
   const [error, setError] = useState<string | null>(null);
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
 
-  const isPdf = document.file_type?.includes("pdf");
-  const isImage = document.file_type?.includes("image") || 
-                 document.file_type?.includes("jpg") || 
-                 document.file_type?.includes("png") || 
-                 document.file_type?.includes("jpeg");
+  const isPdf = document.file_type?.toLowerCase().includes("pdf");
+  const isImage = document.file_type?.toLowerCase().includes("image") || 
+                 document.file_type?.toLowerCase().includes("jpg") || 
+                 document.file_type?.toLowerCase().includes("png") || 
+                 document.file_type?.toLowerCase().includes("jpeg");
 
   useEffect(() => {
     fetchPublicUrl();
@@ -39,16 +40,9 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
         throw new Error("Chemin du fichier manquant");
       }
       
-      // Obtenir l'URL publique - Noter que la nouvelle API ne retourne plus d'erreur séparément
-      const { data } = await supabase.storage
-        .from('documents')
-        .getPublicUrl(document.file_path);
-      
-      if (!data || !data.publicUrl) {
-        throw new Error("Impossible d'obtenir l'URL publique");
-      }
-
-      setPublicUrl(data.publicUrl);
+      // Utiliser notre nouveau service pour obtenir l'URL publique
+      const url = await getDocumentPreviewUrl(document.file_path);
+      setPublicUrl(url);
     } catch (err: any) {
       console.error("Erreur lors de la récupération de l'URL du document:", err);
       setError(err.message || "Erreur lors de la récupération du document");
@@ -59,7 +53,9 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
 
   const handleDownload = () => {
     if (publicUrl) {
-      window.open(publicUrl, '_blank');
+      // Télécharger sans paramètres de cache
+      const downloadUrl = publicUrl.split('?')[0];
+      window.open(downloadUrl, '_blank');
     }
   };
 

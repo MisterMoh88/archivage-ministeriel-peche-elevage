@@ -3,11 +3,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import MainLayout from "@/components/layout/MainLayout";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import AuthGuard from "@/components/auth/AuthGuard";
+import { useEffect } from "react";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -22,7 +23,29 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 // Create a new QueryClient for React Query
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 30000,
+    },
+  },
+});
+
+// Handle redirection based on auth status
+const AuthRedirect = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
+  
+  return null;
+};
 
 const App = () => {
   return (
