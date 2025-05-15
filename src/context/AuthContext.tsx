@@ -54,12 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     console.log("Initializing auth state");
+    setIsLoading(true);
 
-    // Set up the auth state listener
+    // Set up the auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       console.log("Auth state change event:", event);
       
-      // First update session and user synchronously
+      // Update session and user synchronously
       setSession(newSession);
       setUser(newSession?.user ?? null);
       
@@ -85,16 +86,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    // Check for existing session on load
+    // THEN check for existing session
     const checkSession = async () => {
       try {
         console.log("Checking existing session");
-        setIsLoading(true);
         
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error getting session:", error.message);
+          setIsLoading(false);
           return;
         }
         
@@ -115,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
+    // Execute session check
     checkSession();
 
     return () => {
@@ -123,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [navigate]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<AuthResponse> => {
     try {
       console.log("Attempting sign in for:", email);
       setIsLoading(true);
@@ -166,7 +168,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     userProfile,
     session,
