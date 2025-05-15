@@ -1,7 +1,6 @@
 
-// Import from our hooks
-import { useToast } from "@/hooks/use-toast";
-import { toast } from "@/components/ui/toast";
+// Import from our actual hook implementation
+import { useToast, toast, type ToastProps } from "@/hooks/use-toast";
 
 // Re-export
-export { useToast, toast };
+export { useToast, toast, type ToastProps };

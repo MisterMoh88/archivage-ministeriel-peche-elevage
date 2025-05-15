@@ -112,15 +112,7 @@ const ToastDescription = React.forwardRef<
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
-
 type ToastActionElement = React.ReactElement<typeof ToastAction>
-
-// Add toast function
-const toast = ({ ...props }: ToastProps) => {
-  // This is just a placeholder to resolve the type error
-  // Actual toast functionality is implemented elsewhere
-  return null;
-};
 
 export {
   type ToastProps,
@@ -132,5 +124,4 @@ export {
   ToastDescription,
   ToastClose,
   ToastAction,
-  toast,
 }
