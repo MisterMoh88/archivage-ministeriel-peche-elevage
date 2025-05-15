@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Session, User } from "@supabase/supabase-js";
+import { Session, User, AuthResponse } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -18,7 +18,7 @@ type AuthContextType = {
   session: Session | null;
   userProfile: UserProfile | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<AuthResponse>;
   signOut: () => Promise<void>;
 };
 
@@ -128,15 +128,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Attempting sign in for:", email);
       setIsLoading(true);
       
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const response = await supabase.auth.signInWithPassword({ email, password });
       
-      if (error) {
-        console.error("Sign in error:", error.message);
-        throw error;
+      if (response.error) {
+        console.error("Sign in error:", response.error.message);
+        throw response.error;
       } 
       
-      console.log("Sign in successful", data);
-      return data;
+      console.log("Sign in successful", response.data);
+      return response;
     } catch (error: any) {
       console.error("Unexpected sign in error:", error);
       throw error;
