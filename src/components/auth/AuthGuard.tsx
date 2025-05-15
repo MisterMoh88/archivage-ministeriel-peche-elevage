@@ -19,7 +19,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     const timeoutId = setTimeout(() => {
       if (!isLoading && !user) {
         console.log("No authenticated user, redirecting to login");
-        navigate("/login");
+        navigate("/login", { replace: true });
       }
       setIsCheckingAuth(false);
     }, 300);

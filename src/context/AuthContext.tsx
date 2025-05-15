@@ -30,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -77,10 +78,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Handle specific auth events
       if (event === 'SIGNED_IN') {
         toast.success('Connexion réussie');
-        navigate('/');
+        // Ne pas naviguer si nous sommes déjà sur la page d'accueil
+        const currentPath = window.location.pathname;
+        if (currentPath === '/login') {
+          navigate('/', { replace: true });
+        }
       } else if (event === 'SIGNED_OUT') {
         toast.info('Vous avez été déconnecté');
-        navigate('/login');
+        navigate('/login', { replace: true });
       }
       
       setIsLoading(false);
@@ -109,6 +114,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (currentSession?.user) {
           await fetchUserProfile(currentSession.user.id);
         }
+
+        // Gérer la navigation initiale
+        if (isInitialLoad) {
+          setIsInitialLoad(false);
+          // Si un utilisateur est connecté et nous sommes sur la page de connexion, redirigez vers l'accueil
+          if (currentSession && window.location.pathname === '/login') {
+            navigate('/', { replace: true });
+          }
+        }
       } catch (err) {
         console.error("Unexpected error checking session:", err);
       } finally {
@@ -123,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Cleaning up auth subscription");
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, isInitialLoad]);
 
   const signIn = async (email: string, password: string): Promise<AuthResponse> => {
     try {
