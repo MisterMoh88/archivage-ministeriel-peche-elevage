@@ -37,11 +37,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching user profile:", error);
-      } else if (data) {
+        return;
+      } 
+      
+      if (data) {
         setUserProfile(data as UserProfile);
       }
     } catch (err) {
@@ -52,15 +55,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log("Initializing auth state");
 
-    // Configurer l'écouteur d'état d'authentification
+    // Set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       console.log("Auth state change event:", event);
       
+      // First update session and user synchronously
       setSession(newSession);
       setUser(newSession?.user ?? null);
       
+      // Then fetch the profile asynchronously if needed
       if (newSession?.user) {
-        // Utiliser setTimeout pour éviter les problèmes de boucle infinie
+        // Use setTimeout to avoid potential recursive issues
         setTimeout(() => {
           fetchUserProfile(newSession.user.id);
         }, 0);
@@ -68,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserProfile(null);
       }
 
+      // Handle specific auth events
       if (event === 'SIGNED_IN') {
         toast.success('Connexion réussie');
         navigate('/');
@@ -79,23 +85,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    // Vérifier la session existante
+    // Check for existing session on load
     const checkSession = async () => {
       try {
         console.log("Checking existing session");
+        setIsLoading(true);
+        
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error getting session:", error.message);
-          toast.error("Erreur de récupération de session: " + error.message);
-        } else {
-          console.log("Session check result:", currentSession ? "Session active" : "No active session");
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
-          
-          if (currentSession?.user) {
-            await fetchUserProfile(currentSession.user.id);
-          }
+          return;
+        }
+        
+        console.log("Session check result:", currentSession ? "Session active" : "No active session");
+        
+        // Update state with session information
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        // Fetch user profile if needed
+        if (currentSession?.user) {
+          await fetchUserProfile(currentSession.user.id);
         }
       } catch (err) {
         console.error("Unexpected error checking session:", err);
@@ -117,17 +128,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Attempting sign in for:", email);
       setIsLoading(true);
       
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         console.error("Sign in error:", error.message);
-        toast.error(error.message);
-      } else {
-        console.log("Sign in successful");
-      }
+        throw error;
+      } 
+      
+      console.log("Sign in successful", data);
+      return data;
     } catch (error: any) {
       console.error("Unexpected sign in error:", error);
-      toast.error(error.message || "Une erreur est survenue lors de la connexion");
+      throw error;
     } finally {
       setIsLoading(false);
     }

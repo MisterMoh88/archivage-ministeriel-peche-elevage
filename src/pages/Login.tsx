@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { EyeIcon, EyeOffIcon, LockIcon, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { toast } from "sonner";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -16,9 +16,10 @@ export default function Login() {
   const { signIn, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Rediriger vers la page d'accueil si l'utilisateur est déjà connecté
+    // Redirect to the home page if the user is already connected
     if (user) {
       navigate("/");
     }
@@ -27,17 +28,30 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
-
+    
     if (!email || !password) {
       setErrorMessage("Veuillez remplir tous les champs");
       return;
     }
-
+    
     try {
+      setIsSubmitting(true);
       await signIn(email, password);
+      // On success, the AuthContext will handle redirection
     } catch (error: any) {
       console.error("Login handler error:", error);
-      setErrorMessage(error.message || "Une erreur est survenue lors de la connexion");
+      
+      // More specific error messages based on the error type
+      if (error.message?.includes("Invalid login credentials")) {
+        setErrorMessage("Email ou mot de passe incorrect");
+      } else if (error.message?.includes("Database error")) {
+        setErrorMessage("Erreur temporaire du serveur. Veuillez réessayer dans quelques instants.");
+        toast.error("Une erreur de connexion à la base de données est survenue. Notre équipe technique a été informée.");
+      } else {
+        setErrorMessage(error.message || "Une erreur est survenue lors de la connexion");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -79,7 +93,7 @@ export default function Login() {
                   placeholder="nom.prenom@elevage-peche.gouv.ml"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isSubmitting || isLoading}
                   required
                 />
               </div>
@@ -92,7 +106,7 @@ export default function Login() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
+                    disabled={isSubmitting || isLoading}
                     required
                   />
                   <Button
@@ -101,7 +115,7 @@ export default function Login() {
                     size="icon"
                     className="absolute right-0 top-0 h-full px-3"
                     onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
+                    disabled={isSubmitting || isLoading}
                   >
                     {showPassword ? (
                       <EyeOffIcon className="h-4 w-4" />
@@ -114,9 +128,9 @@ export default function Login() {
               <Button 
                 type="submit" 
                 className="w-full bg-ministry-blue hover:bg-ministry-darkBlue"
-                disabled={isLoading}
+                disabled={isSubmitting || isLoading}
               >
-                {isLoading ? (
+                {isSubmitting || isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Connexion en cours...
