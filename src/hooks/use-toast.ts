@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 type ToastProps = {
@@ -16,6 +17,7 @@ type ToasterToast = ToastProps & {
   title?: React.ReactNode
   description?: React.ReactNode
   action?: React.ReactNode
+  open: boolean // Ajout de la propriété open au type
 }
 
 const actionTypes = {
