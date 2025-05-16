@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { uploadDocument, validateDocumentFile } from "@/services/uploadService";
+import { uploadDocument } from "@/services/documents/uploadService";
 import { getDocumentCategories } from "@/services/documents/categoryService";
 import { toast } from "sonner";
 import { BasicInfoFields } from "@/components/upload/BasicInfoFields";
@@ -38,6 +38,21 @@ export default function Upload() {
   });
 
   const selectedType = watch("documentType");
+  const formValues = watch(); // Surveiller tous les champs du formulaire
+
+  useEffect(() => {
+    // Enregistrer les champs pour react-hook-form
+    register("title", { required: "Le titre est requis" });
+    register("referenceNumber", { required: "La référence est requise" });
+    register("documentDate", { required: "La date du document est requise" });
+    register("issuingDepartment");
+    register("description");
+    register("categoryId", { required: "La catégorie est requise" });
+    register("documentType", { required: "Le type de document est requis" });
+    register("budgetYear");
+    register("budgetProgram");
+    register("marketType");
+  }, [register]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -57,21 +72,30 @@ export default function Upload() {
     setIsPublicMarket(selectedType === "Marché public" || selectedType === "Contrat");
   }, [selectedType]);
 
+  // Vérifier si le formulaire est valide pour activer le bouton
+  const isFormValid = () => {
+    // Vérification des champs requis
+    const requiredFields = {
+      title: formValues.title,
+      referenceNumber: formValues.referenceNumber,
+      documentDate: formValues.documentDate,
+      categoryId: formValues.categoryId,
+      documentType: formValues.documentType
+    };
+    
+    const allRequiredFieldsFilled = Object.values(requiredFields).every(value => 
+      value !== undefined && value !== null && value !== "");
+    
+    return allRequiredFieldsFilled && selectedFile && !fileError;
+  };
+
   const onSubmit = async (data: any) => {
     if (!selectedFile) {
       setFileError("Veuillez sélectionner un fichier");
       toast.error("Veuillez sélectionner un fichier");
       return;
     }
-
-    // Valider le fichier avant de continuer
-    const fileValidation = validateDocumentFile(selectedFile);
-    if (!fileValidation.valid) {
-      setFileError(fileValidation.message);
-      toast.error(fileValidation.message);
-      return;
-    }
-
+    
     try {
       setIsUploading(true);
       setFileError(null);
@@ -100,27 +124,14 @@ export default function Upload() {
     setFileError(null);
     
     if (file) {
-      // Valider immédiatement le fichier
+      // Nous utilisons directement le service de validation du fichier importé
+      const { validateDocumentFile } = require("@/services/uploadService");
       const validation = validateDocumentFile(file);
       if (!validation.valid) {
         setFileError(validation.message);
       }
     }
   };
-
-  // Register form fields for react-hook-form
-  useEffect(() => {
-    register("title", { required: "Le titre est requis" });
-    register("referenceNumber", { required: "La référence est requise" });
-    register("documentDate", { required: "La date du document est requise" });
-    register("issuingDepartment");
-    register("description");
-    register("categoryId", { required: "La catégorie est requise" });
-    register("documentType", { required: "Le type de document est requis" });
-    register("budgetYear");
-    register("budgetProgram");
-    register("marketType");
-  }, [register]);
 
   return (
     <div className="page-container">
@@ -164,14 +175,20 @@ export default function Upload() {
               />
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" type="button" onClick={() => {
-                reset();
-                setSelectedFile(null);
-                setFileError(null);
-              }}>Annuler</Button>
+              <Button 
+                variant="outline" 
+                type="button" 
+                onClick={() => {
+                  reset();
+                  setSelectedFile(null);
+                  setFileError(null);
+                }}
+              >
+                Annuler
+              </Button>
               <Button 
                 type="submit" 
-                disabled={isUploading || !selectedFile || !!fileError || !isValid}
+                disabled={isUploading || !selectedFile || !!fileError || !isFormValid()}
                 className="bg-ministry-blue hover:bg-ministry-darkBlue"
               >
                 {isUploading ? (
@@ -189,4 +206,4 @@ export default function Upload() {
       </div>
     </div>
   );
-};
+}
