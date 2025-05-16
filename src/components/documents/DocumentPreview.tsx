@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw, File } from "lucide-react";
+import { AlertCircle, RefreshCw, File, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Document } from "@/types/document";
 import { getDocumentPreviewUrl, checkFileExists } from "@/services/documents/previewService";
@@ -19,11 +19,11 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
 
-  const isPdf = document.file_type?.toLowerCase().includes("pdf");
-  const isImage = document.file_type?.toLowerCase().includes("image") || 
-                 document.file_type?.toLowerCase().includes("jpg") || 
-                 document.file_type?.toLowerCase().includes("png") || 
-                 document.file_type?.toLowerCase().includes("jpeg");
+  const fileType = document.file_type?.toLowerCase() ?? "inconnu";
+
+  const isPdf = fileType.includes("pdf");
+  const isImage = ["image", "jpg", "jpeg", "png", "gif", "bmp"].some(type => fileType.includes(type));
+  const isOfficeDoc = ["doc", "docx", "xls", "xlsx", "csv", "ppt", "pptx"].some(type => fileType.includes(type));
 
   useEffect(() => {
     fetchPublicUrl();
@@ -36,33 +36,29 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Vérifier que le chemin du fichier existe
+
       if (!document.file_path) {
         throw new Error("Chemin du fichier manquant");
       }
-      
-      // Vérifier si le fichier existe physiquement dans le bucket
+
       const exists = await checkFileExists(document.file_path);
       if (!exists) {
         throw new Error("Ce document n'existe plus dans le système de stockage");
       }
-      
-      // Utiliser notre service pour obtenir l'URL publique
+
       const url = await getDocumentPreviewUrl(document.file_path);
-      setPublicUrl(url);
-      setRetryCount(0); // Reset retry count on success
+      setPublicUrl(`${url}?t=${Date.now()}`); // Anti-cache
+      setRetryCount(0);
     } catch (err: any) {
       console.error("Erreur lors de la récupération de l'URL du document:", err);
       setError(err.message || "Erreur lors de la récupération du document");
-      
-      // Auto-retry logic for specific errors
+
       if (retryCount < maxRetries && !err.message.includes("n'existe plus")) {
         setRetryCount(prev => prev + 1);
         setTimeout(() => {
           console.log(`Tentative automatique ${retryCount + 1}/${maxRetries}`);
           fetchPublicUrl();
-        }, 2000); // Retry after 2 seconds
+        }, 2000);
       }
     } finally {
       setLoading(false);
@@ -71,9 +67,8 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
 
   const handleDownload = () => {
     if (publicUrl) {
-      // Télécharger sans paramètres de cache
-      const downloadUrl = publicUrl.split('?')[0];
-      window.open(downloadUrl, '_blank');
+      const downloadUrl = publicUrl.split("?")[0];
+      window.open(downloadUrl, "_blank");
     }
   };
 
@@ -84,7 +79,6 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
   };
 
   const handleReportIssue = () => {
-    // Simuler un signalement à l'administrateur avec plus de détails
     toast.success("Le problème a été signalé à l'administrateur", {
       description: `Document: ${document.title}, Type: ${document.file_type}, ID: ${document.id}`,
     });
@@ -133,11 +127,7 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
         <div className="text-center">
           <File className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
           <p className="text-muted-foreground">Lien du document non disponible</p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={handleRetry}
-          >
+          <Button variant="outline" className="mt-4" onClick={handleRetry}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Réessayer
           </Button>
@@ -147,33 +137,54 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
   }
 
   return (
-    <div className="h-[60vh] border rounded-md bg-muted/30 overflow-hidden">
+    <div className="relative h-[60vh] border rounded-md bg-muted/30 overflow-hidden">
+      {/* Bouton Télécharger global */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="absolute top-2 right-2 z-10"
+        onClick={handleDownload}
+      >
+        <Download className="w-4 h-4 mr-2" />
+        Télécharger
+      </Button>
+
       {isPdf && (
-        <iframe 
+        <iframe
           src={`${publicUrl}#toolbar=0&navpanes=0`}
-          className="w-full h-full" 
+          className="w-full h-full"
           title={document.title}
+          sandbox=""
           onError={() => setError("Erreur d'affichage du PDF")}
         />
       )}
+
       {isImage && (
         <div className="flex items-center justify-center h-full">
-          <img 
+          <img
             src={publicUrl}
-            alt={document.title} 
+            alt={document.title}
             className="max-w-full max-h-full object-contain"
             onError={() => setError("Erreur d'affichage de l'image")}
           />
         </div>
       )}
-      {!isPdf && !isImage && (
-        <div className="flex flex-col items-center justify-center h-full">
+
+      {isOfficeDoc && (
+        <div className="flex flex-col items-center justify-center h-full text-center px-4">
+          <p className="text-muted-foreground">
+            Aperçu non disponible pour ce type de fichier Office.
+          </p>
+          <Button variant="outline" className="mt-4" onClick={handleDownload}>
+            Télécharger pour ouvrir
+          </Button>
+        </div>
+      )}
+
+      {!isPdf && !isImage && !isOfficeDoc && (
+        <div className="flex flex-col items-center justify-center h-full text-center px-4">
           <p className="text-muted-foreground">Aperçu non disponible pour ce type de fichier.</p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={handleDownload}
-          >
+          <Button variant="outline" className="mt-4" onClick={handleDownload}>
             Télécharger pour visualiser
           </Button>
         </div>
