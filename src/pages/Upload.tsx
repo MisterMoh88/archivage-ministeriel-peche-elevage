@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import { CategoryTypeFields } from "@/components/upload/CategoryTypeFields";
 import { MarketFields } from "@/components/upload/MarketFields";
 import { FileUploadArea } from "@/components/upload/FileUploadArea";
 import { documentTypes } from "@/services/documents/documentTypesService";
+import { validateDocumentFile } from "@/services/uploadService"; // 👈 import direct
 
 interface CategoryType {
   id: string;
@@ -33,15 +34,22 @@ export default function Upload() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
 
-  const { register, handleSubmit, watch, setValue, reset, formState: { errors, isValid } } = useForm({
-    mode: "onChange" // Valider les champs en temps réel
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors }
+  } = useForm({
+    mode: "onChange"
   });
 
   const selectedType = watch("documentType");
-  const formValues = watch(); // Surveiller tous les champs du formulaire
+  const formValues = watch();
 
+  // Champs requis
   useEffect(() => {
-    // Enregistrer les champs pour react-hook-form
     register("title", { required: "Le titre est requis" });
     register("referenceNumber", { required: "La référence est requise" });
     register("documentDate", { required: "La date du document est requise" });
@@ -64,7 +72,6 @@ export default function Upload() {
         toast.error("Impossible de charger les catégories de documents");
       }
     };
-
     fetchCategories();
   }, []);
 
@@ -72,22 +79,20 @@ export default function Upload() {
     setIsPublicMarket(selectedType === "Marché public" || selectedType === "Contrat");
   }, [selectedType]);
 
-  // Vérifier si le formulaire est valide pour activer le bouton
-  const isFormValid = () => {
-    // Vérification des champs requis
+  const isFormValid = useMemo(() => {
     const requiredFields = {
       title: formValues.title,
       referenceNumber: formValues.referenceNumber,
       documentDate: formValues.documentDate,
       categoryId: formValues.categoryId,
-      documentType: formValues.documentType
+      documentType: formValues.documentType,
     };
-    
-    const allRequiredFieldsFilled = Object.values(requiredFields).every(value => 
-      value !== undefined && value !== null && value !== "");
-    
-    return allRequiredFieldsFilled && selectedFile && !fileError;
-  };
+
+    const allFilled = Object.values(requiredFields).every(val => val?.trim() !== "");
+    const fileValid = selectedFile && !fileError;
+
+    return allFilled && fileValid;
+  }, [formValues, selectedFile, fileError]);
 
   const onSubmit = async (data: any) => {
     if (!selectedFile) {
@@ -95,22 +100,25 @@ export default function Upload() {
       toast.error("Veuillez sélectionner un fichier");
       return;
     }
-    
+
+    const validation = validateDocumentFile(selectedFile);
+    if (!validation.valid) {
+      setFileError(validation.message);
+      toast.error(validation.message);
+      return;
+    }
+
     try {
       setIsUploading(true);
-      setFileError(null);
-      
-      await uploadDocument({
-        ...data,
-        file: selectedFile,
-      });
-      
+      await uploadDocument({ ...data, file: selectedFile });
+
       toast.success("Document archivé avec succès", {
-        description: `Le document "${data.title}" a été ajouté à la catégorie sélectionnée.`
+        description: `Le document "${data.title}" a été ajouté à la catégorie sélectionnée.`,
       });
-      
+
       reset();
       setSelectedFile(null);
+      setFileError(null);
     } catch (error: any) {
       console.error("Erreur lors de l'upload:", error);
       toast.error(error.message || "Erreur lors de l'archivage du document");
@@ -121,15 +129,16 @@ export default function Upload() {
 
   const handleFileChange = (file: File | null) => {
     setSelectedFile(file);
-    setFileError(null);
-    
-    if (file) {
-      // Nous utilisons directement le service de validation du fichier importé
-      const { validateDocumentFile } = require("@/services/uploadService");
-      const validation = validateDocumentFile(file);
-      if (!validation.valid) {
-        setFileError(validation.message);
-      }
+    if (!file) {
+      setFileError("Aucun fichier sélectionné");
+      return;
+    }
+
+    const validation = validateDocumentFile(file);
+    if (!validation.valid) {
+      setFileError(validation.message);
+    } else {
+      setFileError(null);
     }
   };
 
@@ -142,21 +151,17 @@ export default function Upload() {
           <Card className="mb-6 border-ministry-blue/20">
             <CardHeader>
               <CardTitle>Informations du document</CardTitle>
-              <CardDescription>
-                Renseignez les informations nécessaires à l'archivage
-              </CardDescription>
+              <CardDescription>Renseignez les informations nécessaires à l'archivage</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <BasicInfoFields errors={errors} />
-              
-              <CategoryTypeFields 
+              <CategoryTypeFields
                 categories={categories}
                 setValue={setValue}
                 watch={watch}
                 documentTypes={documentTypes}
                 errors={errors}
               />
-
               {isPublicMarket && <MarketFields setValue={setValue} />}
             </CardContent>
           </Card>
@@ -169,15 +174,15 @@ export default function Upload() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <FileUploadArea 
-                onFileChange={handleFileChange} 
+              <FileUploadArea
+                onFileChange={handleFileChange}
                 error={fileError}
               />
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button 
-                variant="outline" 
-                type="button" 
+              <Button
+                variant="outline"
+                type="button"
                 onClick={() => {
                   reset();
                   setSelectedFile(null);
@@ -186,9 +191,9 @@ export default function Upload() {
               >
                 Annuler
               </Button>
-              <Button 
-                type="submit" 
-                disabled={isUploading || !selectedFile || !!fileError || !isFormValid()}
+              <Button
+                type="submit"
+                disabled={isUploading || !isFormValid}
                 className="bg-ministry-blue hover:bg-ministry-darkBlue"
               >
                 {isUploading ? (
