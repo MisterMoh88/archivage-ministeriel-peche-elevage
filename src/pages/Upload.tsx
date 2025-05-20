@@ -35,6 +35,7 @@ export default function Upload() {
   const [fileError, setFileError] = useState<string | null>(null);
 
   const {
+    control,
     register,
     handleSubmit,
     watch,
@@ -154,7 +155,7 @@ export default function Upload() {
               <CardDescription>Renseignez les informations nécessaires à l'archivage</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <BasicInfoFields errors={errors} />
+              <BasicInfoFields control={control} errors={errors} />
               <CategoryTypeFields
                 categories={categories}
                 setValue={setValue}
