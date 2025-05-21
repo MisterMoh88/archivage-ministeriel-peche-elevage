@@ -75,6 +75,7 @@ export const uploadDocument = async (documentData: UploadDocumentProps) => {
     }
 
     console.log("Fichier uploadé avec succès:", uploadData);
+    reset(); // Réinitialise tous les champs du formulaire
 
     // 2. Enregistrer les métadonnées du document
     const { data, error } = await supabase.from('documents').insert({
