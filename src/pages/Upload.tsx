@@ -117,9 +117,22 @@ export default function Upload() {
         description: `Le document "${data.title}" a été ajouté à la catégorie sélectionnée.`,
       });
 
-      reset();
+      reset({
+  title: "",
+  referenceNumber: "",
+  documentDate: "",
+  issuingDepartment: "",
+  description: "",
+  categoryId: "",
+  documentType: "",
+  budgetYear: "",
+  budgetProgram: "",
+  marketType: "",
+});
       setSelectedFile(null);
       setFileError(null);
+      setIsPublicMarket(false);
+      setPreviewUrl(null);
     } catch (error: any) {
       console.error("Erreur lors de l'upload:", error);
       toast.error(error.message || "Erreur lors de l'archivage du document");
