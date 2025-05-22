@@ -132,7 +132,6 @@ export default function Upload() {
       setSelectedFile(null);
       setFileError(null);
       setIsPublicMarket(false);
-      setPreviewUrl(null);
     } catch (error: any) {
       console.error("Erreur lors de l'upload:", error);
       toast.error(error.message || "Erreur lors de l'archivage du document");
