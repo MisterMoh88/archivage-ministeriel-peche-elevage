@@ -107,3 +107,18 @@ export const logDocumentView = async (documentId: string) => {
     // Silent fail, don't show toast to user for view logging
   }
 };
+/**
+ * Génère une URL publique valide pour un fichier stocké dans Supabase.
+ * @param filePath - Le chemin du fichier tel qu'enregistré dans Supabase (ex: dossier/nom.pdf)
+ * @returns Une URL publique complète et correcte vers le document Supabase
+ */
+export const getSupabasePublicUrl = (filePath: string | null | undefined): string | null => {
+  if (!filePath || filePath.trim() === "") return null;
+
+  const baseUrl = "https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents";
+  
+  // Nettoie et encode le chemin
+  const cleanPath = encodeURI(filePath.trim());
+  
+  return `${baseUrl}/${cleanPath}`;
+};

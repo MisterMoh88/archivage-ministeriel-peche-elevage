@@ -13,6 +13,8 @@ import { PDFViewer } from "./PDFViewer";
 import { toast } from "sonner";
 import { handleDownload } from "@/utils/documentUtils";
 import { checkFileExists } from "@/services/documents/previewService";
+import { getSupabasePublicUrl } from "@/utils/documentUtils";
+
 
 interface DocumentViewerProps {
   document: Document | null;
@@ -59,11 +61,10 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
     }
   };
 
-  // Ensure we have a valid document URL - Fix for PDF viewer parameter error
-  const isPDF = document.file_type?.toLowerCase().includes('pdf');
-  const documentUrl = (document.file_path && documentExists) ? 
-    `https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents/${document.file_path}` : 
-    null;
+const isPDF = document.file_type?.toLowerCase().includes('pdf');
+const documentUrl = (document?.file_path && documentExists)
+  ? getSupabasePublicUrl(document.file_path)
+  : null;
 
   // Log the URL to help debug
   useEffect(() => {
