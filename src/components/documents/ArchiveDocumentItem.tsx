@@ -1,9 +1,22 @@
-
+import { useMemo } from "react";
 import { Document } from "@/types/document";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Eye, Download, MoreVertical, FileText, FilePen, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Eye,
+  Download,
+  MoreVertical,
+  FileText,
+  FilePen,
+  Trash2,
+} from "lucide-react";
 import { formatDate, getFileIcon, handleDownload } from "@/utils/documentUtils";
 
 interface ArchiveDocumentItemProps {
@@ -14,17 +27,25 @@ interface ArchiveDocumentItemProps {
   onDelete: (doc: Document) => void;
 }
 
-export const ArchiveDocumentItem = ({ 
-  document, 
+export const ArchiveDocumentItem = ({
+  document,
   getCategoryName,
   onView,
   onEdit,
-  onDelete
+  onDelete,
 }: ArchiveDocumentItemProps) => {
+  const fileIcon = useMemo(() => {
+    return (
+      getFileIcon(document.file_type) || (
+        <FileText className="h-6 w-6 text-ministry-blue" />
+      )
+    );
+  }, [document.file_type]);
+
   return (
     <div className="p-4 flex items-start gap-4 hover:bg-muted/30 transition-colors">
       <div className="rounded-md bg-ministry-blue/10 p-2 mt-1">
-        {getFileIcon(document.file_type) || <FileText className="h-6 w-6 text-ministry-blue" />}
+        {fileIcon}
       </div>
       <div className="flex-1 space-y-1">
         <div className="flex justify-between">
@@ -48,33 +69,44 @@ export const ArchiveDocumentItem = ({
         {document.budget_program && (
           <div className="bg-ministry-gold/10 p-2 rounded-md mt-2 text-xs">
             {document.budget_year && (
-              <p><span className="font-medium">Année budgétaire:</span> {document.budget_year}</p>
+              <p>
+                <span className="font-medium">Année budgétaire:</span>{" "}
+                {document.budget_year}
+              </p>
             )}
-            <p><span className="font-medium">Programme budgétaire:</span> {document.budget_program}</p>
+            <p>
+              <span className="font-medium">Programme budgétaire:</span>{" "}
+              {document.budget_program}
+            </p>
             {document.market_type && (
-              <p><span className="font-medium">Type de marché:</span> {document.market_type}</p>
+              <p>
+                <span className="font-medium">Type de marché:</span>{" "}
+                {document.market_type}
+              </p>
             )}
           </div>
         )}
       </div>
       <div className="flex items-center gap-1">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           onClick={() => onView(document)}
+          aria-label="Voir le document"
         >
           <Eye className="h-4 w-4" />
         </Button>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           onClick={() => handleDownload(document.file_path, document.title)}
+          aria-label="Télécharger le document"
         >
           <Download className="h-4 w-4" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Plus d'options">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
