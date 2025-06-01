@@ -1,15 +1,13 @@
 
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { getDocuments } from "@/services/documents/crudService";
 import { getDocumentCategories } from "@/services/documents/categoryService";
 import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { DocumentEditForm } from "@/components/documents/DocumentEditForm";
 import { DocumentDeleteConfirm } from "@/components/documents/DocumentDeleteConfirm";
-import { ArchivesSearchBar } from "@/components/documents/ArchivesSearchBar";
-import { ArchivesSortBar } from "@/components/documents/ArchivesSortBar";
-import { ArchiveDocumentItem } from "@/components/documents/ArchiveDocumentItem";
+import { ArchiveFilters } from "@/components/documents/ArchiveFilters";
+import { useDocumentFilters } from "@/hooks/useDocumentFilters";
 import { Document } from "@/types/document";
 
 export default function Archives() {
@@ -42,44 +40,12 @@ export default function Archives() {
     fetchCategories();
   }, []);
 
-  // Filter and sort documents
-  const filteredAndSortedDocuments = () => {
-    if (!documents) return [];
-    
-    let filtered = [...documents] as Document[];
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(doc => 
-        doc.title.toLowerCase().includes(query) ||
-        doc.reference_number.toLowerCase().includes(query) ||
-        doc.document_type.toLowerCase().includes(query) ||
-        (doc.issuing_department && doc.issuing_department.toLowerCase().includes(query))
-      );
-    }
-    
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(doc => doc.category_id === selectedCategory);
-    }
-    
-    // Sort documents
-    switch (selectedSort) {
-      case "newest":
-        filtered.sort((a, b) => new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime());
-        break;
-      case "oldest":
-        filtered.sort((a, b) => new Date(a.upload_date).getTime() - new Date(b.upload_date).getTime());
-        break;
-      case "a-z":
-        filtered.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "z-a":
-        filtered.sort((a, b) => b.title.localeCompare(a.title));
-        break;
-    }
-    
-    return filtered;
-  };
+  const filteredDocuments = useDocumentFilters({
+    documents,
+    searchQuery,
+    selectedCategory,
+    selectedSort,
+  });
 
   const getCategoryName = (categoryId: string) => {
     const category = categories.find(cat => cat.id === categoryId);
@@ -94,62 +60,21 @@ export default function Archives() {
     <div className="page-container">
       <h1 className="section-title">Archives documentaires</h1>
 
-      <ArchivesSearchBar 
+      <ArchiveFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        selectedSort={selectedSort}
+        onSortChange={setSelectedSort}
+        categories={categories}
+        filteredDocuments={filteredDocuments}
+        isLoading={isLoading}
+        getCategoryName={getCategoryName}
+        onView={setViewDocument}
+        onEdit={setEditDocument}
+        onDelete={setDeleteDocument}
       />
-
-      <Tabs 
-        defaultValue="all" 
-        className="space-y-4"
-        value={selectedCategory}
-        onValueChange={setSelectedCategory}
-      >
-        <TabsList>
-          <TabsTrigger value="all">Tous</TabsTrigger>
-          {categories.map(category => (
-            <TabsTrigger 
-              key={category.id} 
-              value={category.id}
-            >
-              {category.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value={selectedCategory} className="space-y-4">
-          <div className="rounded-md border">
-            <ArchivesSortBar 
-              documentCount={filteredAndSortedDocuments().length}
-              selectedSort={selectedSort}
-              onSortChange={setSelectedSort}
-            />
-
-            <div className="divide-y">
-              {isLoading ? (
-                <div className="py-10 text-center">
-                  <p className="text-muted-foreground">Chargement des documents...</p>
-                </div>
-              ) : filteredAndSortedDocuments().length === 0 ? (
-                <div className="py-10 text-center">
-                  <p className="text-muted-foreground">Aucun document trouvé</p>
-                </div>
-              ) : (
-                filteredAndSortedDocuments().map((doc) => (
-                  <ArchiveDocumentItem
-                    key={doc.id}
-                    document={doc}
-                    getCategoryName={getCategoryName}
-                    onView={setViewDocument}
-                    onEdit={setEditDocument}
-                    onDelete={setDeleteDocument}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
 
       {/* Document details viewer */}
       <DocumentViewer 

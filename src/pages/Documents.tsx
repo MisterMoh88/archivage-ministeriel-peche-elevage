@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,11 +7,9 @@ import { getDocumentCategories } from "@/services/documents/categoryService";
 import { DocumentSearchBar } from "@/components/documents/DocumentSearchBar";
 import { DocumentCategoryTabs } from "@/components/documents/DocumentCategoryTabs";
 import { DocumentsTable } from "@/components/documents/DocumentsTable";
-import { Document } from "@/types/document";
+import { useDocumentSorting } from "@/hooks/useDocumentSorting";
 
 export default function Documents() {
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
@@ -19,6 +18,17 @@ export default function Documents() {
   const { data: documents, isLoading, error, refetch } = useQuery({
     queryKey: ["documents"],
     queryFn: getDocuments,
+  });
+
+  const {
+    filteredAndSortedDocuments,
+    sortColumn,
+    sortDirection,
+    handleSort,
+  } = useDocumentSorting({
+    documents,
+    searchQuery,
+    selectedCategory,
   });
 
   useEffect(() => {
@@ -33,58 +43,6 @@ export default function Documents() {
 
     fetchCategories();
   }, []);
-
-  // Filter and sort documents
-  const filteredAndSortedDocuments = () => {
-    if (!documents) return [];
-    
-    let filtered = [...documents] as Document[];
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(doc => 
-        doc.title.toLowerCase().includes(query) ||
-        doc.reference_number.toLowerCase().includes(query) ||
-        doc.document_type.toLowerCase().includes(query)
-      );
-    }
-    
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(doc => doc.category_id === selectedCategory);
-    }
-    
-    if (sortColumn) {
-      filtered.sort((a, b) => {
-        const direction = sortDirection === "asc" ? 1 : -1;
-        
-        switch (sortColumn) {
-          case "title":
-            return a.title.localeCompare(b.title) * direction;
-          case "date":
-            return (new Date(a.document_date).getTime() - 
-                  new Date(b.document_date).getTime()) * direction;
-          case "type":
-            return a.document_type.localeCompare(b.document_type) * direction;
-          case "reference":
-            return a.reference_number.localeCompare(b.reference_number) * direction;
-          default:
-            return 0;
-        }
-      });
-    }
-    
-    return filtered;
-  };
-
-  // Handle sorting
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
-  };
 
   if (error) {
     return (
@@ -117,7 +75,7 @@ export default function Documents() {
         onCategoryChange={setSelectedCategory}
       >
         <DocumentsTable 
-          documents={filteredAndSortedDocuments()}
+          documents={filteredAndSortedDocuments}
           isLoading={isLoading}
           categories={categories}
           onDocumentChange={refetch}
