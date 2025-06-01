@@ -1,4 +1,6 @@
+
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Document } from "@/types/document";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +18,7 @@ import {
   FileText,
   FilePen,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { formatDate, getFileIcon, handleDownload } from "@/utils/documentUtils";
 
@@ -34,6 +37,8 @@ export const ArchiveDocumentItem = ({
   onEdit,
   onDelete,
 }: ArchiveDocumentItemProps) => {
+  const navigate = useNavigate();
+  
   const fileIcon = useMemo(() => {
     return (
       getFileIcon(document.file_type) || (
@@ -41,6 +46,13 @@ export const ArchiveDocumentItem = ({
       )
     );
   }, [document.file_type]);
+
+  const handleOpenInViewer = () => {
+    navigate(`/document-viewer?id=${document.id}`);
+  };
+
+  const isPDF = document.file_type?.toLowerCase().includes('pdf') || 
+              document.file_path?.toLowerCase().endsWith('.pdf');
 
   return (
     <div className="p-4 flex items-start gap-4 hover:bg-muted/30 transition-colors">
@@ -88,6 +100,17 @@ export const ArchiveDocumentItem = ({
         )}
       </div>
       <div className="flex items-center gap-1">
+        {isPDF && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleOpenInViewer}
+            aria-label="Ouvrir en plein écran"
+            title="Ouvrir en plein écran"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -111,6 +134,15 @@ export const ArchiveDocumentItem = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {isPDF && (
+              <>
+                <DropdownMenuItem onClick={handleOpenInViewer}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Plein écran
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={() => onView(document)}>
               <FileText className="h-4 w-4 mr-2" />
               Détails
