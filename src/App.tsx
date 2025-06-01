@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import MainLayout from "@/components/layout/MainLayout";
 import { AuthProvider } from "@/context/AuthContext";
 import AuthGuard from "@/components/auth/AuthGuard";
+import DocumentViewerPage from "./pages/DocumentViewerPage";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -86,6 +86,13 @@ const App = () => {
                 <Route path="/admin" element={
                   <AuthGuard>
                     <MainLayout><Admin /></MainLayout>
+                  </AuthGuard>
+                } />
+                
+                {/* Page de visualisation PDF en plein écran */}
+                <Route path="/document-viewer" element={
+                  <AuthGuard>
+                    <DocumentViewerPage />
                   </AuthGuard>
                 } />
                 
