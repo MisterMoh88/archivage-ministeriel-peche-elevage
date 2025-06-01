@@ -75,6 +75,7 @@ export type Database = {
           last_modified: string
           market_type: Database["public"]["Enums"]["market_type"] | null
           modified_by: string | null
+          original_filename: string | null
           reference_number: string
           status: Database["public"]["Enums"]["document_status"] | null
           title: string
@@ -96,6 +97,7 @@ export type Database = {
           last_modified?: string
           market_type?: Database["public"]["Enums"]["market_type"] | null
           modified_by?: string | null
+          original_filename?: string | null
           reference_number: string
           status?: Database["public"]["Enums"]["document_status"] | null
           title: string
@@ -117,6 +119,7 @@ export type Database = {
           last_modified?: string
           market_type?: Database["public"]["Enums"]["market_type"] | null
           modified_by?: string | null
+          original_filename?: string | null
           reference_number?: string
           status?: Database["public"]["Enums"]["document_status"] | null
           title?: string

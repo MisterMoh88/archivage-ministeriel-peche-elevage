@@ -15,7 +15,6 @@ import { handleDownload } from "@/utils/documentUtils";
 import { checkFileExists } from "@/services/documents/previewService";
 import { getSupabasePublicUrl } from "@/utils/documentUtils";
 
-
 interface DocumentViewerProps {
   document: Document | null;
   isOpen: boolean;
@@ -35,15 +34,15 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
   });
 
   useEffect(() => {
-    // Vérifier si le document existe dans le storage
     if (document && document.file_path) {
       checkFileExists(document.file_path)
         .then(exists => {
           setDocumentExists(exists);
+          console.log("Document exists:", exists, "Path:", document.file_path);
         })
         .catch(error => {
           console.error("Erreur lors de la vérification du document:", error);
-          setDocumentExists(true); // Par défaut, on suppose que le document existe
+          setDocumentExists(true);
         });
     }
   }, [document]);
@@ -61,15 +60,25 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
     }
   };
 
-const isPDF = document.file_type?.toLowerCase().includes('pdf');
-const documentUrl = (document?.file_path && documentExists)
-  ? getSupabasePublicUrl(document.file_path)
-  : null;
+  // Amélioration de la détection PDF
+  const isPDF = document.file_type?.toLowerCase().includes('pdf') || 
+                document.file_path?.toLowerCase().endsWith('.pdf') ||
+                document.title?.toLowerCase().endsWith('.pdf');
 
-  // Log the URL to help debug
+  const documentUrl = (document?.file_path && documentExists)
+    ? getSupabasePublicUrl(document.file_path)
+    : null;
+
   useEffect(() => {
-    console.log("Document URL for viewer:", documentUrl);
-  }, [documentUrl]);
+    console.log("Document details:", {
+      title: document.title,
+      fileType: document.file_type,
+      filePath: document.file_path,
+      isPDF: isPDF,
+      documentUrl: documentUrl,
+      exists: documentExists
+    });
+  }, [document, isPDF, documentUrl, documentExists]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -102,7 +111,7 @@ const documentUrl = (document?.file_path && documentExists)
                   Signaler le problème
                 </Button>
               </div>
-            ) : isPDF ? (
+            ) : isPDF && documentUrl ? (
               <PDFViewer fileUrl={documentUrl} />
             ) : (
               <DocumentPreview document={document} />
@@ -119,8 +128,12 @@ const documentUrl = (document?.file_path && documentExists)
         </Tabs>
 
         <DialogFooter className="space-x-2">
-          <Button variant="outline" onClick={downloadDocument} disabled={!documentExists}>Télécharger</Button>
-          <Button variant="outline" onClick={onClose}>Fermer</Button>
+          <Button variant="outline" onClick={downloadDocument} disabled={!documentExists}>
+            Télécharger
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            Fermer
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
