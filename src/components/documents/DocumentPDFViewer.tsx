@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
@@ -6,7 +7,7 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw, ExternalLink, FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { checkFileAccessibility } from "@/utils/documentUtils";
+import { performDocumentDiagnostic } from "@/utils/documentUtils";
 
 interface DocumentPDFViewerProps {
   documentUrl: string;
@@ -24,6 +25,8 @@ export const DocumentPDFViewer = ({
   const [fileAccessible, setFileAccessible] = useState<boolean | null>(null);
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [diagnosticInfo, setDiagnosticInfo] = useState<any>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 2;
 
   const defaultLayoutPluginInstance = defaultLayoutPlugin({
     sidebarTabs: (defaultTabs) => [
@@ -37,52 +40,39 @@ export const DocumentPDFViewer = ({
     },
   });
 
-  // Diagnostic approfondi du fichier
+  // Diagnostic détaillé du fichier
   useEffect(() => {
     const performDiagnostic = async () => {
       if (!documentUrl) return;
       
       setCheckingAccess(true);
-      console.log("🔍 Diagnostic complet du document:", documentUrl);
+      console.log("🔍 Démarrage du diagnostic pour:", documentUrl);
       
-      const diagnostic = {
-        url: documentUrl,
-        timestamp: new Date().toISOString(),
-        accessible: false,
-        responseStatus: null,
-        responseHeaders: {},
-        errorDetails: null
-      };
-
       try {
-        // Test d'accessibilité avec plus de détails
-        const response = await fetch(documentUrl, { 
-          method: 'HEAD',
-          mode: 'cors',
-          cache: 'no-cache'
-        });
+        // Extraire le chemin du fichier depuis l'URL
+        const urlParts = documentUrl.split('/documents/');
+        const filePath = urlParts.length > 1 ? decodeURIComponent(urlParts[1].split('?')[0]) : '';
         
-        diagnostic.accessible = response.ok;
-        diagnostic.responseStatus = response.status;
-        diagnostic.responseHeaders = Object.fromEntries(response.headers.entries());
+        if (!filePath) {
+          throw new Error("Impossible d'extraire le chemin du fichier depuis l'URL");
+        }
         
-        console.log("📊 Diagnostic détaillé:", diagnostic);
+        const diagnostic = await performDocumentDiagnostic(filePath);
+        setDiagnosticInfo(diagnostic);
         
-        if (!response.ok) {
-          diagnostic.errorDetails = `HTTP ${response.status}: ${response.statusText}`;
+        if (diagnostic.accessibility && diagnostic.accessibility.accessible) {
+          setFileAccessible(true);
+        } else {
+          setFileAccessible(false);
+          onLoadError(new Error(`Document inaccessible: ${diagnostic.accessibility?.details?.errorMessage || 'Erreur inconnue'}`));
         }
       } catch (error: any) {
-        console.error("❌ Erreur lors du diagnostic:", error);
-        diagnostic.errorDetails = error.message;
-        diagnostic.accessible = false;
-      }
-      
-      setDiagnosticInfo(diagnostic);
-      setFileAccessible(diagnostic.accessible);
-      setCheckingAccess(false);
-      
-      if (!diagnostic.accessible) {
-        onLoadError(new Error(`Document inaccessible: ${diagnostic.errorDetails || 'Erreur inconnue'}`));
+        console.error("❌ Erreur durant le diagnostic:", error);
+        setDiagnosticInfo({ error: error.message });
+        setFileAccessible(false);
+        onLoadError(error);
+      } finally {
+        setCheckingAccess(false);
       }
     };
 
@@ -90,11 +80,16 @@ export const DocumentPDFViewer = ({
   }, [documentUrl, onLoadError]);
 
   const handleRetry = () => {
-    console.log("🔄 Tentative de rechargement...");
-    setCheckingAccess(true);
-    setFileAccessible(null);
-    setDiagnosticInfo(null);
-    window.location.reload();
+    if (retryCount < maxRetries) {
+      console.log(`🔄 Tentative ${retryCount + 1}/${maxRetries}`);
+      setRetryCount(prev => prev + 1);
+      setCheckingAccess(true);
+      setFileAccessible(null);
+      setDiagnosticInfo(null);
+    } else {
+      console.log("❌ Nombre maximum de tentatives atteint");
+      window.location.reload();
+    }
   };
 
   const handleOpenInNewTab = () => {
@@ -130,7 +125,7 @@ export const DocumentPDFViewer = ({
         <div className="flex flex-col items-center space-y-4">
           <RefreshCw className="h-8 w-8 animate-spin text-ministry-blue" />
           <p className="text-sm text-muted-foreground">
-            Diagnostic du document en cours...
+            Vérification de l'accessibilité du document...
           </p>
         </div>
       </div>
@@ -145,20 +140,21 @@ export const DocumentPDFViewer = ({
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Document non accessible</AlertTitle>
           <AlertDescription className="space-y-4">
-            <p>Le document ne peut pas être chargé. Diagnostic :</p>
+            <p>Le document ne peut pas être chargé.</p>
             
             {diagnosticInfo && (
               <div className="bg-muted p-3 rounded text-xs space-y-2">
-                <div><strong>URL:</strong> {diagnosticInfo.url}</div>
-                <div><strong>Statut HTTP:</strong> {diagnosticInfo.responseStatus || 'N/A'}</div>
-                <div><strong>Erreur:</strong> {diagnosticInfo.errorDetails || 'Inconnue'}</div>
-                {diagnosticInfo.responseHeaders && Object.keys(diagnosticInfo.responseHeaders).length > 0 && (
-                  <div>
-                    <strong>En-têtes de réponse:</strong>
-                    <pre className="mt-1 text-xs bg-background p-2 rounded overflow-auto">
-                      {JSON.stringify(diagnosticInfo.responseHeaders, null, 2)}
-                    </pre>
-                  </div>
+                <div><strong>URL:</strong> {documentUrl}</div>
+                {diagnosticInfo.accessibility?.details && (
+                  <>
+                    <div><strong>Statut HTTP:</strong> {diagnosticInfo.accessibility.details.httpStatus || 'N/A'}</div>
+                    <div><strong>Erreur:</strong> {diagnosticInfo.accessibility.details.errorMessage || 'Inconnue'}</div>
+                    <div><strong>CORS activé:</strong> {diagnosticInfo.accessibility.details.corsEnabled ? 'Oui' : 'Non'}</div>
+                    <div><strong>Fichier dans bucket:</strong> {diagnosticInfo.bucketFileExists ? 'Oui' : 'Non'}</div>
+                  </>
+                )}
+                {diagnosticInfo.error && (
+                  <div><strong>Erreur de diagnostic:</strong> {diagnosticInfo.error}</div>
                 )}
               </div>
             )}
@@ -166,7 +162,7 @@ export const DocumentPDFViewer = ({
             <ul className="list-disc list-inside space-y-1 text-sm">
               <li>Le fichier a été supprimé ou déplacé du stockage</li>
               <li>Problème de permissions d'accès au bucket Supabase</li>
-              <li>URL de stockage incorrecte ou expirée</li>
+              <li>URL de stockage incorrecte ou corrompue</li>
               <li>Problème de connectivité réseau</li>
             </ul>
 
@@ -175,9 +171,10 @@ export const DocumentPDFViewer = ({
                 variant="outline" 
                 size="sm"
                 onClick={handleRetry}
+                disabled={retryCount >= maxRetries}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Réessayer
+                {retryCount >= maxRetries ? 'Recharger la page' : 'Réessayer'}
               </Button>
               <Button 
                 variant="outline" 
@@ -193,7 +190,7 @@ export const DocumentPDFViewer = ({
                 onClick={handleDownloadDirect}
               >
                 <FileText className="h-4 w-4 mr-2" />
-                Téléchargement direct
+                Télécharger
               </Button>
             </div>
           </AlertDescription>
@@ -212,7 +209,7 @@ export const DocumentPDFViewer = ({
             defaultScale={1}
             theme="light"
             onDocumentLoad={(e) => {
-              console.log("✅ Document PDF chargé avec succès:", e);
+              console.log("✅ Document PDF chargé avec succès");
               onLoadSuccess();
             }}
             renderError={(error) => {
@@ -222,37 +219,33 @@ export const DocumentPDFViewer = ({
                 <div className="flex flex-col items-center justify-center h-full p-8">
                   <AlertCircle className="h-16 w-16 text-destructive mb-4" />
                   <h3 className="text-lg font-medium text-destructive mb-2">
-                    Erreur de chargement du PDF
+                    Erreur de rendu PDF
                   </h3>
                   <p className="text-sm text-muted-foreground text-center mb-6 max-w-md">
-                    Le document PDF ne peut pas être affiché. Cela peut être dû à un fichier corrompu ou un format non supporté.
+                    Le document PDF ne peut pas être affiché. Cela peut être dû à un fichier corrompu.
                   </p>
                   <div className="flex space-x-2">
                     <Button 
                       variant="outline" 
                       onClick={handleRetry}
+                      disabled={retryCount >= maxRetries}
                     >
                       <RefreshCw className="h-4 w-4 mr-2" />
-                      Réessayer
+                      {retryCount >= maxRetries ? 'Recharger' : 'Réessayer'}
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={handleOpenInNewTab}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Ouvrir dans un nouvel onglet
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleDownloadDirect}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Télécharger
+                      Nouvel onglet
                     </Button>
                   </div>
-                  <div className="mt-4 p-2 bg-muted rounded text-xs max-w-lg">
-                    <strong>Détails de l'erreur:</strong> {error.message || 'Erreur inconnue'}
-                  </div>
+                  {diagnosticInfo && (
+                    <div className="mt-4 p-2 bg-muted rounded text-xs max-w-lg">
+                      <strong>Détails:</strong> {error.message || 'Erreur inconnue'}
+                    </div>
+                  )}
                 </div>
               );
             }}

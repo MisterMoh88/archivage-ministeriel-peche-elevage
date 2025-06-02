@@ -66,11 +66,11 @@ export const handleDownload = async (filePath: string, title: string) => {
     URL.revokeObjectURL(url);
     document.body.removeChild(link);
     
-    return Promise.resolve(); // Pour permettre l'enchaînement avec .then()
+    return Promise.resolve();
   } catch (error) {
     console.error("Erreur de téléchargement:", error);
     toast.error("Erreur lors du téléchargement du document");
-    return Promise.reject(error); // Pour permettre la gestion avec .catch()
+    return Promise.reject(error);
   }
 };
 
@@ -95,7 +95,7 @@ export const handlePreview = async (filePath: string) => {
 export const logDocumentView = async (documentId: string) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return; // Silent fail if not authenticated
+    if (!user) return;
     
     await supabase.from('user_actions').insert({
       user_id: user.id,
@@ -105,18 +105,15 @@ export const logDocumentView = async (documentId: string) => {
     });
   } catch (error) {
     console.error("Erreur lors de l'enregistrement de la consultation:", error);
-    // Silent fail, don't show toast to user for view logging
   }
 };
 
 /**
- * Génère une URL publique valide pour un fichier stocké dans Supabase avec gestion d'erreur améliorée.
- * @param filePath - Le chemin du fichier tel qu'enregistré dans Supabase (ex: dossier/nom.pdf)
- * @returns Une URL publique complète et correcte vers le document Supabase
+ * Génère une URL publique valide pour un fichier stocké dans Supabase avec diagnostic complet
  */
 export const getSupabasePublicUrl = (filePath: string | null | undefined): string | null => {
   if (!filePath || filePath.trim() === "") {
-    console.warn("Chemin de fichier vide ou invalide:", filePath);
+    console.warn("🚨 Chemin de fichier vide ou invalide:", filePath);
     return null;
   }
 
@@ -126,39 +123,125 @@ export const getSupabasePublicUrl = (filePath: string | null | undefined): strin
     
     // Nettoie le chemin en supprimant les espaces et caractères spéciaux problématiques
     const cleanPath = filePath.trim()
-      .replace(/\s+/g, '_') // Remplace les espaces par des underscores
-      .replace(/[<>:"|?*]/g, '_'); // Remplace les caractères spéciaux par des underscores
+      .replace(/\s+/g, '_')
+      .replace(/[<>:"|?*]/g, '_');
     
-    // Encode correctement l'URL
+    // Encode correctement l'URL en préservant les slashes
     const encodedPath = encodeURIComponent(cleanPath).replace(/%2F/g, '/');
     
     const fullUrl = `${baseUrl}/${encodedPath}`;
     
-    console.log("URL générée pour le document:", {
+    console.log("📄 URL générée pour le document:", {
       originalPath: filePath,
       cleanedPath: cleanPath,
       encodedPath: encodedPath,
-      fullUrl: fullUrl
+      fullUrl: fullUrl,
+      timestamp: new Date().toISOString()
     });
     
     return fullUrl;
   } catch (error) {
-    console.error("Erreur lors de la génération de l'URL publique:", error);
+    console.error("❌ Erreur lors de la génération de l'URL publique:", error);
     return null;
   }
 };
 
 /**
- * Vérifie si un fichier existe et est accessible via son URL publique
- * @param fileUrl - L'URL publique du fichier
- * @returns Promise<boolean> - true si le fichier est accessible
+ * Vérifie si un fichier existe et est accessible via son URL publique avec diagnostic détaillé
  */
-export const checkFileAccessibility = async (fileUrl: string): Promise<boolean> => {
+export const checkFileAccessibility = async (fileUrl: string): Promise<{accessible: boolean, details: any}> => {
+  const diagnostic = {
+    url: fileUrl,
+    timestamp: new Date().toISOString(),
+    accessible: false,
+    httpStatus: null,
+    responseHeaders: {},
+    errorMessage: null,
+    corsEnabled: false
+  };
+
   try {
-    const response = await fetch(fileUrl, { method: 'HEAD' });
-    return response.ok;
-  } catch (error) {
-    console.error("Erreur lors de la vérification de l'accessibilité du fichier:", error);
-    return false;
+    console.log("🔍 Test d'accessibilité détaillé pour:", fileUrl);
+    
+    // Test avec HEAD request d'abord
+    const headResponse = await fetch(fileUrl, { 
+      method: 'HEAD',
+      mode: 'cors',
+      cache: 'no-cache'
+    });
+    
+    diagnostic.httpStatus = headResponse.status;
+    diagnostic.responseHeaders = Object.fromEntries(headResponse.headers.entries());
+    diagnostic.corsEnabled = headResponse.headers.get('access-control-allow-origin') !== null;
+    diagnostic.accessible = headResponse.ok;
+    
+    if (!headResponse.ok) {
+      diagnostic.errorMessage = `HTTP ${headResponse.status}: ${headResponse.statusText}`;
+      
+      // Test avec GET si HEAD échoue
+      try {
+        const getResponse = await fetch(fileUrl, { 
+          method: 'GET',
+          mode: 'cors',
+          cache: 'no-cache'
+        });
+        diagnostic.accessible = getResponse.ok;
+        if (getResponse.ok) {
+          diagnostic.errorMessage = "HEAD failed but GET succeeded";
+        }
+      } catch (getError: any) {
+        diagnostic.errorMessage += ` | GET also failed: ${getError.message}`;
+      }
+    }
+    
+    console.log("📊 Diagnostic complet d'accessibilité:", diagnostic);
+    return { accessible: diagnostic.accessible, details: diagnostic };
+    
+  } catch (error: any) {
+    diagnostic.errorMessage = error.message;
+    console.error("❌ Erreur lors du test d'accessibilité:", error);
+    return { accessible: false, details: diagnostic };
   }
+};
+
+/**
+ * Diagnostic complet d'un document avec toutes les vérifications
+ */
+export const performDocumentDiagnostic = async (filePath: string) => {
+  console.log("🔬 Démarrage du diagnostic complet pour:", filePath);
+  
+  const url = getSupabasePublicUrl(filePath);
+  if (!url) {
+    console.error("❌ Impossible de générer l'URL pour:", filePath);
+    return { success: false, error: "URL generation failed" };
+  }
+  
+  const accessibilityResult = await checkFileAccessibility(url);
+  
+  // Test d'existence dans le bucket
+  let bucketFileExists = false;
+  try {
+    const { data, error } = await supabase.storage
+      .from('documents')
+      .list(filePath.split('/').slice(0, -1).join('/'), {
+        limit: 100,
+        search: filePath.split('/').pop() || ''
+      });
+    
+    bucketFileExists = !error && data && data.some(file => file.name === filePath.split('/').pop());
+    console.log(`📂 Fichier existant dans le bucket: ${bucketFileExists}`);
+  } catch (error) {
+    console.error("❌ Erreur lors de la vérification du bucket:", error);
+  }
+  
+  const fullDiagnostic = {
+    filePath,
+    url,
+    bucketFileExists,
+    accessibility: accessibilityResult,
+    timestamp: new Date().toISOString()
+  };
+  
+  console.log("🔬 Diagnostic complet terminé:", fullDiagnostic);
+  return fullDiagnostic;
 };
