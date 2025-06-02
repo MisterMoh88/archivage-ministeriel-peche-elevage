@@ -1,3 +1,4 @@
+
 import React from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,18 +108,57 @@ export const logDocumentView = async (documentId: string) => {
     // Silent fail, don't show toast to user for view logging
   }
 };
+
 /**
- * Génère une URL publique valide pour un fichier stocké dans Supabase.
+ * Génère une URL publique valide pour un fichier stocké dans Supabase avec gestion d'erreur améliorée.
  * @param filePath - Le chemin du fichier tel qu'enregistré dans Supabase (ex: dossier/nom.pdf)
  * @returns Une URL publique complète et correcte vers le document Supabase
  */
 export const getSupabasePublicUrl = (filePath: string | null | undefined): string | null => {
-  if (!filePath || filePath.trim() === "") return null;
+  if (!filePath || filePath.trim() === "") {
+    console.warn("Chemin de fichier vide ou invalide:", filePath);
+    return null;
+  }
 
-  const baseUrl = "https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents";
-  
-  // Nettoie et encode le chemin
-  const cleanPath = encodeURI(filePath.trim());
-  
-  return `${baseUrl}/${cleanPath}`;
+  try {
+    // URL de base du stockage Supabase
+    const baseUrl = "https://knvrrwesxppwldomarhn.supabase.co/storage/v1/object/public/documents";
+    
+    // Nettoie le chemin en supprimant les espaces et caractères spéciaux problématiques
+    const cleanPath = filePath.trim()
+      .replace(/\s+/g, '_') // Remplace les espaces par des underscores
+      .replace(/[<>:"|?*]/g, '_'); // Remplace les caractères spéciaux par des underscores
+    
+    // Encode correctement l'URL
+    const encodedPath = encodeURIComponent(cleanPath).replace(/%2F/g, '/');
+    
+    const fullUrl = `${baseUrl}/${encodedPath}`;
+    
+    console.log("URL générée pour le document:", {
+      originalPath: filePath,
+      cleanedPath: cleanPath,
+      encodedPath: encodedPath,
+      fullUrl: fullUrl
+    });
+    
+    return fullUrl;
+  } catch (error) {
+    console.error("Erreur lors de la génération de l'URL publique:", error);
+    return null;
+  }
+};
+
+/**
+ * Vérifie si un fichier existe et est accessible via son URL publique
+ * @param fileUrl - L'URL publique du fichier
+ * @returns Promise<boolean> - true si le fichier est accessible
+ */
+export const checkFileAccessibility = async (fileUrl: string): Promise<boolean> => {
+  try {
+    const response = await fetch(fileUrl, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.error("Erreur lors de la vérification de l'accessibilité du fichier:", error);
+    return false;
+  }
 };
