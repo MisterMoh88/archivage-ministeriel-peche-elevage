@@ -24,17 +24,26 @@ const DocumentViewerPage = ({ fileUrl: propFileUrl }: DocumentViewerPageProps) =
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 3;
+  const maxRetries = 2; // Réduit pour éviter les boucles infinies
 
   // Récupération des paramètres
   const documentId = searchParams.get('id');
   const fileUrl = propFileUrl || searchParams.get('url') || searchParams.get('fileUrl');
+
+  console.log("🔍 DocumentViewerPage - Paramètres:", {
+    documentId,
+    fileUrl,
+    propFileUrl,
+    searchParams: Object.fromEntries(searchParams.entries())
+  });
 
   // Récupération des informations du document depuis la base de données
   const { data: document, isLoading: documentLoading, error: documentError } = useQuery({
     queryKey: ["document", documentId],
     queryFn: async () => {
       if (!documentId) return null;
+      
+      console.log("📄 Récupération du document:", documentId);
       
       const { data, error } = await supabase
         .from('documents')
@@ -46,9 +55,11 @@ const DocumentViewerPage = ({ fileUrl: propFileUrl }: DocumentViewerPageProps) =
         .single();
 
       if (error) {
+        console.error("❌ Erreur lors de la récupération du document:", error);
         throw error;
       }
 
+      console.log("✅ Document récupéré:", data);
       return data as Document;
     },
     enabled: !!documentId,
@@ -61,8 +72,15 @@ const DocumentViewerPage = ({ fileUrl: propFileUrl }: DocumentViewerPageProps) =
 
   const documentTitle = document?.title || searchParams.get('title') || 'Document PDF';
 
+  console.log("🌐 URL finale du document:", {
+    documentPath: document?.file_path,
+    documentUrl,
+    documentTitle
+  });
+
   useEffect(() => {
     if (documentUrl) {
+      console.log("🔄 Réinitialisation pour nouvelle URL:", documentUrl);
       setLoading(true);
       setError(null);
       setRetryCount(0);
@@ -70,32 +88,40 @@ const DocumentViewerPage = ({ fileUrl: propFileUrl }: DocumentViewerPageProps) =
   }, [documentUrl]);
 
   const handleLoadSuccess = () => {
+    console.log("✅ Document chargé avec succès");
     setLoading(false);
     setError(null);
     setRetryCount(0);
-    console.log("Document PDF chargé avec succès");
   };
 
   const handleLoadError = (error: any) => {
-    console.error("Erreur de chargement du PDF:", error);
+    console.error("❌ Erreur de chargement du PDF:", error);
     setLoading(false);
+    
+    const errorMessage = error?.message || "Erreur inconnue";
+    console.log(`🔄 Tentative ${retryCount + 1}/${maxRetries} - Erreur: ${errorMessage}`);
     
     if (retryCount < maxRetries) {
       const nextRetryCount = retryCount + 1;
       setRetryCount(nextRetryCount);
-      console.log(`Tentative automatique ${nextRetryCount}/${maxRetries}`);
       
-      // Auto-retry après 2 secondes
+      // Auto-retry après 3 secondes avec un délai progressif
+      const retryDelay = nextRetryCount * 2000; // 2s, 4s
+      console.log(`⏱️ Nouvelle tentative dans ${retryDelay}ms`);
+      
       setTimeout(() => {
+        console.log(`🔄 Tentative automatique ${nextRetryCount}/${maxRetries}`);
         setLoading(true);
         setError(null);
-      }, 2000);
+      }, retryDelay);
     } else {
-      setError("Impossible de charger le document PDF. Vérifiez que l'URL est valide et que le fichier est accessible.");
+      console.log("❌ Nombre maximum de tentatives atteint");
+      setError(`Impossible de charger le document après ${maxRetries} tentatives. ${errorMessage}`);
     }
   };
 
   const handleRetry = () => {
+    console.log("🔄 Tentative manuelle de rechargement");
     setError(null);
     setLoading(true);
     setRetryCount(0);
@@ -103,14 +129,21 @@ const DocumentViewerPage = ({ fileUrl: propFileUrl }: DocumentViewerPageProps) =
   };
 
   const handleGoBack = () => {
+    console.log("⬅️ Retour à la page précédente");
     navigate(-1);
   };
 
   if (documentLoading) {
-    return <DocumentViewerLoading />;
+    return <DocumentViewerLoading message="Récupération des informations du document..." />;
   }
 
   if (documentError || (!documentUrl && !fileUrl)) {
+    const errorMsg = documentError 
+      ? "Erreur lors de la récupération du document." 
+      : "Aucun document ou URL fournie. Veuillez spécifier un paramètre 'id' ou 'url'.";
+    
+    console.error("❌ Erreur de récupération:", errorMsg);
+    
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto">
@@ -120,9 +153,12 @@ const DocumentViewerPage = ({ fileUrl: propFileUrl }: DocumentViewerPageProps) =
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Document non trouvé</AlertTitle>
             <AlertDescription>
-              {documentError 
-                ? "Erreur lors de la récupération du document." 
-                : "Aucun document ou URL fournie. Veuillez spécifier un paramètre 'id' ou 'url'."}
+              {errorMsg}
+              {documentId && (
+                <div className="mt-2 text-xs opacity-70">
+                  ID du document: {documentId}
+                </div>
+              )}
             </AlertDescription>
           </Alert>
         </div>

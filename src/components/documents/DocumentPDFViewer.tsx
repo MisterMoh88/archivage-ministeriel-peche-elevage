@@ -5,7 +5,7 @@ import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { Button } from "@/components/ui/button";
-import { AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
+import { AlertCircle, RefreshCw, ExternalLink, FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { checkFileAccessibility } from "@/utils/documentUtils";
 
@@ -24,6 +24,7 @@ export const DocumentPDFViewer = ({
 }: DocumentPDFViewerProps) => {
   const [fileAccessible, setFileAccessible] = useState<boolean | null>(null);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [diagnosticInfo, setDiagnosticInfo] = useState<any>(null);
 
   const defaultLayoutPluginInstance = defaultLayoutPlugin({
     sidebarTabs: (defaultTabs) => [
@@ -37,34 +38,90 @@ export const DocumentPDFViewer = ({
     },
   });
 
-  // Vérifier l'accessibilité du fichier au montage du composant
+  // Diagnostic approfondi du fichier
   useEffect(() => {
-    const checkAccess = async () => {
+    const performDiagnostic = async () => {
       if (!documentUrl) return;
       
       setCheckingAccess(true);
-      console.log("Vérification de l'accessibilité du fichier:", documentUrl);
+      console.log("🔍 Diagnostic complet du document:", documentUrl);
       
-      const accessible = await checkFileAccessibility(documentUrl);
-      console.log("Fichier accessible:", accessible);
+      const diagnostic = {
+        url: documentUrl,
+        timestamp: new Date().toISOString(),
+        accessible: false,
+        responseStatus: null,
+        responseHeaders: {},
+        errorDetails: null
+      };
+
+      try {
+        // Test d'accessibilité avec plus de détails
+        const response = await fetch(documentUrl, { 
+          method: 'HEAD',
+          mode: 'cors',
+          cache: 'no-cache'
+        });
+        
+        diagnostic.accessible = response.ok;
+        diagnostic.responseStatus = response.status;
+        diagnostic.responseHeaders = Object.fromEntries(response.headers.entries());
+        
+        console.log("📊 Diagnostic détaillé:", diagnostic);
+        
+        if (!response.ok) {
+          diagnostic.errorDetails = `HTTP ${response.status}: ${response.statusText}`;
+        }
+      } catch (error: any) {
+        console.error("❌ Erreur lors du diagnostic:", error);
+        diagnostic.errorDetails = error.message;
+        diagnostic.accessible = false;
+      }
       
-      setFileAccessible(accessible);
+      setDiagnosticInfo(diagnostic);
+      setFileAccessible(diagnostic.accessible);
       setCheckingAccess(false);
       
-      if (!accessible) {
-        onLoadError(new Error(`Le fichier n'est pas accessible à l'URL: ${documentUrl}`));
+      if (!diagnostic.accessible) {
+        onLoadError(new Error(`Document inaccessible: ${diagnostic.errorDetails || 'Erreur inconnue'}`));
       }
     };
 
-    checkAccess();
+    performDiagnostic();
   }, [documentUrl, onLoadError]);
 
   const handleRetry = () => {
+    console.log("🔄 Tentative de rechargement...");
+    setCheckingAccess(true);
+    setFileAccessible(null);
+    setDiagnosticInfo(null);
     window.location.reload();
   };
 
   const handleOpenInNewTab = () => {
+    console.log("🌐 Ouverture dans un nouvel onglet:", documentUrl);
     window.open(documentUrl, '_blank');
+  };
+
+  const handleDownloadDirect = async () => {
+    try {
+      console.log("💾 Tentative de téléchargement direct:", documentUrl);
+      const response = await fetch(documentUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'document.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("❌ Erreur de téléchargement:", error);
+    }
   };
 
   // Affichage pendant la vérification d'accessibilité
@@ -74,7 +131,7 @@ export const DocumentPDFViewer = ({
         <div className="flex flex-col items-center space-y-4">
           <RefreshCw className="h-8 w-8 animate-spin text-ministry-blue" />
           <p className="text-sm text-muted-foreground">
-            Vérification de l'accessibilité du document...
+            Diagnostic du document en cours...
           </p>
         </div>
       </div>
@@ -89,13 +146,32 @@ export const DocumentPDFViewer = ({
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Document non accessible</AlertTitle>
           <AlertDescription className="space-y-4">
-            <p>Le document ne peut pas être chargé depuis le stockage. Cela peut être dû à :</p>
+            <p>Le document ne peut pas être chargé. Diagnostic :</p>
+            
+            {diagnosticInfo && (
+              <div className="bg-muted p-3 rounded text-xs space-y-2">
+                <div><strong>URL:</strong> {diagnosticInfo.url}</div>
+                <div><strong>Statut HTTP:</strong> {diagnosticInfo.responseStatus || 'N/A'}</div>
+                <div><strong>Erreur:</strong> {diagnosticInfo.errorDetails || 'Inconnue'}</div>
+                {diagnosticInfo.responseHeaders && Object.keys(diagnosticInfo.responseHeaders).length > 0 && (
+                  <div>
+                    <strong>En-têtes de réponse:</strong>
+                    <pre className="mt-1 text-xs bg-background p-2 rounded overflow-auto">
+                      {JSON.stringify(diagnosticInfo.responseHeaders, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+
             <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>Le fichier a été supprimé ou déplacé</li>
-              <li>Les permissions d'accès au bucket de stockage</li>
-              <li>Un problème de connectivité réseau</li>
+              <li>Le fichier a été supprimé ou déplacé du stockage</li>
+              <li>Problème de permissions d'accès au bucket Supabase</li>
+              <li>URL de stockage incorrecte ou expirée</li>
+              <li>Problème de connectivité réseau</li>
             </ul>
-            <div className="flex space-x-2 mt-4">
+
+            <div className="flex flex-wrap gap-2 mt-4">
               <Button 
                 variant="outline" 
                 size="sm"
@@ -110,11 +186,16 @@ export const DocumentPDFViewer = ({
                 onClick={handleOpenInNewTab}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Ouvrir dans un nouvel onglet
+                Nouvel onglet
               </Button>
-            </div>
-            <div className="mt-2 p-2 bg-muted rounded text-xs">
-              <strong>URL du document:</strong> {documentUrl}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleDownloadDirect}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Téléchargement direct
+              </Button>
             </div>
           </AlertDescription>
         </Alert>
@@ -131,9 +212,12 @@ export const DocumentPDFViewer = ({
             plugins={[defaultLayoutPluginInstance]}
             defaultScale={1}
             theme="light"
-            onDocumentLoad={onLoadSuccess}
+            onDocumentLoad={(e) => {
+              console.log("✅ Document PDF chargé avec succès:", e);
+              onLoadSuccess();
+            }}
             renderError={(error) => {
-              console.error("Erreur de rendu PDF:", error);
+              console.error("❌ Erreur de rendu PDF:", error);
               onLoadError(error);
               return (
                 <div className="flex flex-col items-center justify-center h-full p-8">
@@ -142,7 +226,7 @@ export const DocumentPDFViewer = ({
                     Erreur de chargement du PDF
                   </h3>
                   <p className="text-sm text-muted-foreground text-center mb-6 max-w-md">
-                    Le document ne peut pas être affiché. Vérifiez que le fichier est valide et accessible.
+                    Le document PDF ne peut pas être affiché. Cela peut être dû à un fichier corrompu ou un format non supporté.
                   </p>
                   <div className="flex space-x-2">
                     <Button 
@@ -158,6 +242,13 @@ export const DocumentPDFViewer = ({
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Ouvrir dans un nouvel onglet
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleDownloadDirect}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Télécharger
                     </Button>
                   </div>
                   <div className="mt-4 p-2 bg-muted rounded text-xs max-w-lg">
