@@ -60,11 +60,18 @@ export const DocumentPDFViewer = ({
         const diagnostic = await performDocumentDiagnostic(filePath);
         setDiagnosticInfo(diagnostic);
         
-        if (diagnostic.accessibility && diagnostic.accessibility.accessible) {
+        // Vérifier si le diagnostic contient un objet d'accessibilité ou une erreur
+        if ('success' in diagnostic && !diagnostic.success) {
+          setFileAccessible(false);
+          onLoadError(new Error(`Erreur de diagnostic: ${diagnostic.error}`));
+        } else if ('accessibility' in diagnostic && diagnostic.accessibility && diagnostic.accessibility.accessible) {
           setFileAccessible(true);
         } else {
           setFileAccessible(false);
-          onLoadError(new Error(`Document inaccessible: ${diagnostic.accessibility?.details?.errorMessage || 'Erreur inconnue'}`));
+          const errorMessage = 'accessibility' in diagnostic && diagnostic.accessibility?.details?.errorMessage 
+            ? diagnostic.accessibility.details.errorMessage 
+            : 'Erreur inconnue';
+          onLoadError(new Error(`Document inaccessible: ${errorMessage}`));
         }
       } catch (error: any) {
         console.error("❌ Erreur durant le diagnostic:", error);
@@ -145,7 +152,8 @@ export const DocumentPDFViewer = ({
             {diagnosticInfo && (
               <div className="bg-muted p-3 rounded text-xs space-y-2">
                 <div><strong>URL:</strong> {documentUrl}</div>
-                {diagnosticInfo.accessibility?.details && (
+                {/* Vérification sécurisée du diagnostic */}
+                {diagnosticInfo && 'accessibility' in diagnosticInfo && diagnosticInfo.accessibility?.details && (
                   <>
                     <div><strong>Statut HTTP:</strong> {diagnosticInfo.accessibility.details.httpStatus || 'N/A'}</div>
                     <div><strong>Erreur:</strong> {diagnosticInfo.accessibility.details.errorMessage || 'Inconnue'}</div>
@@ -153,7 +161,7 @@ export const DocumentPDFViewer = ({
                     <div><strong>Fichier dans bucket:</strong> {diagnosticInfo.bucketFileExists ? 'Oui' : 'Non'}</div>
                   </>
                 )}
-                {diagnosticInfo.error && (
+                {diagnosticInfo && 'error' in diagnosticInfo && (
                   <div><strong>Erreur de diagnostic:</strong> {diagnosticInfo.error}</div>
                 )}
               </div>
