@@ -20,19 +20,26 @@ export default function Archives() {
   const [editDocument, setEditDocument] = useState<Document | null>(null);
   const [deleteDocument, setDeleteDocument] = useState<Document | null>(null);
 
-  // Fetch documents and categories with better error handling
+  // Fetch documents with debugging
   const { data: documents = [], isLoading, error, refetch } = useQuery({
     queryKey: ["archives-documents"],
-    queryFn: getDocuments,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 3,
+    queryFn: async () => {
+      console.log("📋 Exécution de la requête getDocuments...");
+      const result = await getDocuments();
+      console.log("📋 Résultat de getDocuments:", result);
+      return result;
+    },
+    staleTime: 30 * 1000, // 30 secondes
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
 
+  // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["document-categories"],
     queryFn: getDocumentCategories,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    retry: 3,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
   });
 
   const filteredDocuments = useDocumentFilters({
@@ -48,19 +55,27 @@ export default function Archives() {
   };
 
   const handleDocumentChange = () => {
+    console.log("🔄 Rafraîchissement des documents...");
     refetch();
   };
 
-  console.log("Archives page state:", {
-    documentsCount: documents.length,
-    filteredCount: filteredDocuments.length,
-    categoriesCount: categories.length,
-    isLoading,
-    categoriesLoading,
-    error: error?.message
-  });
+  // Debug logging
+  useEffect(() => {
+    console.log("🏛️ Archives page - État actuel:", {
+      documentsCount: documents.length,
+      filteredCount: filteredDocuments.length,
+      categoriesCount: categories.length,
+      isLoading,
+      categoriesLoading,
+      error: error?.message,
+      searchQuery,
+      selectedCategory,
+      selectedSort
+    });
+  }, [documents, filteredDocuments, categories, isLoading, categoriesLoading, error, searchQuery, selectedCategory, selectedSort]);
   
   if (error) {
+    console.error("❌ Erreur dans Archives:", error);
     return (
       <div className="page-container">
         <h1 className="section-title">Archives documentaires</h1>
@@ -70,7 +85,10 @@ export default function Archives() {
               Erreur lors du chargement des documents: {error.message}
             </p>
             <button 
-              onClick={() => refetch()}
+              onClick={() => {
+                console.log("🔄 Tentative de rechargement...");
+                refetch();
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               Réessayer

@@ -5,20 +5,27 @@ import { Document } from "@/types/document";
 
 export const getDocuments = async () => {
   try {
+    console.log("🔄 Début de la récupération des documents...");
+    
+    // Requête simplifiée sans jointure complexe
     const { data, error } = await supabase
       .from('documents')
-      .select(`
-        *,
-        document_categories(name, description)
-      `)
+      .select('*')
       .order('upload_date', { ascending: false });
 
     if (error) {
+      console.error("❌ Erreur Supabase lors de la récupération des documents:", error);
       throw error;
     }
 
-    return data;
+    console.log("✅ Documents récupérés avec succès:", {
+      count: data?.length || 0,
+      sampleDocument: data?.[0] || null
+    });
+
+    return data || [];
   } catch (error: any) {
+    console.error("❌ Erreur dans getDocuments:", error);
     toast.error(error.message || "Erreur lors de la récupération des documents");
     throw error;
   }
@@ -98,10 +105,7 @@ export const getRecentDocuments = async (limit = 5) => {
   try {
     const { data, error } = await supabase
       .from('documents')
-      .select(`
-        *,
-        document_categories(name, description)
-      `)
+      .select('*')
       .order('upload_date', { ascending: false })
       .limit(limit);
 
@@ -109,7 +113,7 @@ export const getRecentDocuments = async (limit = 5) => {
       throw error;
     }
 
-    return data;
+    return data || [];
   } catch (error: any) {
     console.error("Erreur lors de la récupération des documents récents:", error);
     throw error;
