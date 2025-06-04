@@ -9,7 +9,7 @@ import { getDocumentHistory } from "@/services/documents/historyService";
 import { DocumentPreview } from "./DocumentPreview";
 import { DocumentDetails } from "./DocumentDetails";
 import { DocumentHistory } from "./DocumentHistory";
-import { PDFViewer } from "./PDFViewer";
+import { PDFViewerPage } from "./PDFViewerPage";
 import { toast } from "sonner";
 import { handleDownload } from "@/utils/documentUtils";
 import { checkFileExists } from "@/services/documents/previewService";
@@ -112,7 +112,12 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
                 </Button>
               </div>
             ) : isPDF && documentUrl ? (
-              <PDFViewer fileUrl={documentUrl} />
+              <div className="h-full">
+                <PDFViewerPage 
+                  fileUrl={documentUrl} 
+                  documentTitle={document.title}
+                />
+              </div>
             ) : (
               <DocumentPreview document={document} />
             )}
