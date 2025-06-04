@@ -13,7 +13,6 @@ import { Document } from "@/types/document";
 export default function Archives() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [selectedSort, setSelectedSort] = useState<string>("newest");
   
   // States for document actions
@@ -21,24 +20,20 @@ export default function Archives() {
   const [editDocument, setEditDocument] = useState<Document | null>(null);
   const [deleteDocument, setDeleteDocument] = useState<Document | null>(null);
 
-  // Fetch documents and categories
-  const { data: documents, isLoading, error, refetch } = useQuery({
+  // Fetch documents and categories with better error handling
+  const { data: documents = [], isLoading, error, refetch } = useQuery({
     queryKey: ["archives-documents"],
     queryFn: getDocuments,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
   });
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const categoriesData = await getDocumentCategories();
-        setCategories(categoriesData);
-      } catch (error) {
-        console.error("Erreur lors de la récupération des catégories:", error);
-      }
-    };
-
-    fetchCategories();
-  }, []);
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["document-categories"],
+    queryFn: getDocumentCategories,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 3,
+  });
 
   const filteredDocuments = useDocumentFilters({
     documents,
@@ -55,6 +50,36 @@ export default function Archives() {
   const handleDocumentChange = () => {
     refetch();
   };
+
+  console.log("Archives page state:", {
+    documentsCount: documents.length,
+    filteredCount: filteredDocuments.length,
+    categoriesCount: categories.length,
+    isLoading,
+    categoriesLoading,
+    error: error?.message
+  });
+  
+  if (error) {
+    return (
+      <div className="page-container">
+        <h1 className="section-title">Archives documentaires</h1>
+        <div className="flex items-center justify-center py-10">
+          <div className="text-center">
+            <p className="text-destructive mb-4">
+              Erreur lors du chargement des documents: {error.message}
+            </p>
+            <button 
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="page-container">
@@ -69,7 +94,7 @@ export default function Archives() {
         onSortChange={setSelectedSort}
         categories={categories}
         filteredDocuments={filteredDocuments}
-        isLoading={isLoading}
+        isLoading={isLoading || categoriesLoading}
         getCategoryName={getCategoryName}
         onView={setViewDocument}
         onEdit={setEditDocument}
@@ -77,20 +102,24 @@ export default function Archives() {
       />
 
       {/* Document details viewer */}
-      <DocumentViewer 
-        document={viewDocument}
-        isOpen={!!viewDocument}
-        onClose={() => setViewDocument(null)}
-      />
+      {viewDocument && (
+        <DocumentViewer 
+          document={viewDocument}
+          isOpen={!!viewDocument}
+          onClose={() => setViewDocument(null)}
+        />
+      )}
 
       {/* Document edit form */}
-      <DocumentEditForm 
-        document={editDocument}
-        isOpen={!!editDocument}
-        onClose={() => setEditDocument(null)}
-        onSuccess={handleDocumentChange}
-        categories={categories}
-      />
+      {editDocument && (
+        <DocumentEditForm 
+          document={editDocument}
+          isOpen={!!editDocument}
+          onClose={() => setEditDocument(null)}
+          onSuccess={handleDocumentChange}
+          categories={categories}
+        />
+      )}
 
       {/* Document delete confirmation */}
       {deleteDocument && (

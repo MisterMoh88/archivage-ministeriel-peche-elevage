@@ -48,7 +48,18 @@ export const ArchiveDocumentItem = ({
   }, [document.file_type]);
 
   const handleOpenInViewer = () => {
+    console.log("Opening document in viewer:", document.id);
     navigate(`/document-viewer?id=${document.id}`);
+  };
+
+  const handleViewDocument = () => {
+    console.log("Viewing document:", document.id);
+    onView(document);
+  };
+
+  const handleDownloadDocument = () => {
+    console.log("Downloading document:", document.file_path);
+    handleDownload(document.file_path, document.title);
   };
 
   const isPDF = document.file_type?.toLowerCase().includes('pdf') || 
@@ -56,13 +67,13 @@ export const ArchiveDocumentItem = ({
 
   return (
     <div className="p-4 flex items-start gap-4 hover:bg-muted/30 transition-colors">
-      <div className="rounded-md bg-ministry-blue/10 p-2 mt-1">
+      <div className="rounded-md bg-ministry-blue/10 p-2 mt-1 flex-shrink-0">
         {fileIcon}
       </div>
-      <div className="flex-1 space-y-1">
-        <div className="flex justify-between">
-          <h3 className="font-medium">{document.title}</h3>
-          <span className="text-xs text-muted-foreground">
+      <div className="flex-1 space-y-1 min-w-0">
+        <div className="flex justify-between items-start">
+          <h3 className="font-medium truncate pr-2">{document.title}</h3>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
             {formatDate(document.document_date)}
           </span>
         </div>
@@ -99,7 +110,7 @@ export const ArchiveDocumentItem = ({
           </div>
         )}
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-shrink-0">
         {isPDF && (
           <Button
             variant="ghost"
@@ -114,7 +125,7 @@ export const ArchiveDocumentItem = ({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => onView(document)}
+          onClick={handleViewDocument}
           aria-label="Voir le document"
         >
           <Eye className="h-4 w-4" />
@@ -122,7 +133,7 @@ export const ArchiveDocumentItem = ({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => handleDownload(document.file_path, document.title)}
+          onClick={handleDownloadDocument}
           aria-label="Télécharger le document"
         >
           <Download className="h-4 w-4" />
@@ -143,7 +154,7 @@ export const ArchiveDocumentItem = ({
                 <DropdownMenuSeparator />
               </>
             )}
-            <DropdownMenuItem onClick={() => onView(document)}>
+            <DropdownMenuItem onClick={handleViewDocument}>
               <FileText className="h-4 w-4 mr-2" />
               Détails
             </DropdownMenuItem>

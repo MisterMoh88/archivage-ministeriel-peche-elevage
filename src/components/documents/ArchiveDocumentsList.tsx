@@ -19,10 +19,18 @@ export const ArchiveDocumentsList = ({
   onEdit,
   onDelete,
 }: ArchiveDocumentsListProps) => {
+  console.log("ArchiveDocumentsList render:", {
+    documentsCount: documents.length,
+    isLoading
+  });
+
   if (isLoading) {
     return (
       <div className="py-10 text-center">
-        <p className="text-muted-foreground">Chargement des documents...</p>
+        <div className="flex justify-center items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-muted-foreground">Chargement des documents...</span>
+        </div>
       </div>
     );
   }
