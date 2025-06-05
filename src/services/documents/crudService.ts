@@ -7,10 +7,16 @@ export const getDocuments = async () => {
   try {
     console.log("🔄 Début de la récupération des documents...");
     
-    // Requête simplifiée sans jointure complexe
+    // Requête avec jointure pour récupérer les catégories
     const { data, error } = await supabase
       .from('documents')
-      .select('*')
+      .select(`
+        *,
+        document_categories (
+          name,
+          description
+        )
+      `)
       .order('upload_date', { ascending: false });
 
     if (error) {

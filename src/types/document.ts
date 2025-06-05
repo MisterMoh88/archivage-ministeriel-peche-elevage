@@ -1,4 +1,3 @@
-
 export interface Document {
   id: string;
   title: string;
@@ -8,7 +7,7 @@ export interface Document {
   file_path: string;
   file_type: string;
   file_size: number;
-  document_categories: {
+  document_categories?: {
     name: string;
     description: string;
   };
