@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Document } from "@/types/document";
 import { getSupabasePublicUrl } from "@/utils/documentUtils";
-import { PDFViewerPage } from "@/components/documents/PDFViewerPage";
+import PDFViewerPage from "@/components/documents/PDFViewerPage";
 
 interface DocumentViewerPageProps {
   fileUrl?: string;

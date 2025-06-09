@@ -33,9 +33,6 @@ export const PDFViewer = ({ fileUrl, documentTitle = "Document PDF", onClose }: 
       printPlugin: {
         enableShortcuts: true,
       },
-      propertiesPlugin: {
-        enableShortcuts: true,
-      },
       rotatePlugin: {
         enableShortcuts: true,
       },
@@ -61,8 +58,8 @@ export const PDFViewer = ({ fileUrl, documentTitle = "Document PDF", onClose }: 
     toast.success('Document chargé avec succès');
   };
 
-  const handleViewerError = (error: any) => {
-    console.error('❌ Erreur de la visionneuse PDF:', error);
+  const handleViewerError = () => {
+    console.error('❌ Erreur de la visionneuse PDF');
     setErrorMessage('Erreur de la visionneuse PDF par défaut');
     
     if (retryCount < maxRetries) {
