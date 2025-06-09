@@ -15,40 +15,36 @@ interface PDFViewerProps {
   onClose?: () => void;
 }
 
-type ViewerState = 'loading' | 'success' | 'fallback' | 'error';
+type ViewerState = 'loading' | 'native' | 'fallback' | 'error';
 
 export const PDFViewer = ({ fileUrl, documentTitle = "Document PDF", onClose }: PDFViewerProps) => {
   const [viewerState, setViewerState] = useState<ViewerState>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [hasTriedNative, setHasTriedNative] = useState(false);
 
   // Réinitialise l'état quand l'URL change
   useEffect(() => {
     setViewerState('loading');
     setErrorMessage('');
-    setHasTriedNative(false);
   }, [fileUrl]);
 
   const handleDocumentLoad = () => {
-    console.log('✅ Document PDF chargé avec succès');
-    setViewerState('success');
-    setHasTriedNative(true);
+    console.log('✅ Document PDF chargé avec succès (visionneuse native)');
+    setViewerState('native');
     toast.success('Document chargé avec succès');
   };
 
   const handleViewerError = () => {
-    console.error('❌ Erreur de la visionneuse PDF');
+    console.error('❌ Erreur de la visionneuse PDF native, passage au fallback');
     setErrorMessage('Erreur de la visionneuse PDF par défaut');
-    setHasTriedNative(true);
     
-    // Une seule tentative - passage direct au fallback
+    // Passage direct au fallback - une seule fois
     toast.warning('Utilisation du mode de compatibilité...');
     setViewerState('fallback');
   };
 
   const handleFallbackLoad = () => {
     console.log('✅ Document chargé via Google Docs Viewer');
-    setViewerState('success');
+    // On reste en état 'fallback' mais on cache le message de chargement
   };
 
   const handleFallbackError = () => {
@@ -75,37 +71,6 @@ export const PDFViewer = ({ fileUrl, documentTitle = "Document PDF", onClose }: 
   const handleRetry = () => {
     setViewerState('loading');
     setErrorMessage('');
-    setHasTriedNative(false);
-  };
-
-  const renderContent = () => {
-    switch (viewerState) {
-      case 'loading':
-        return <PDFLoadingState />;
-
-      case 'fallback':
-        return (
-          <PDFFallbackViewer
-            fileUrl={fileUrl}
-            documentTitle={documentTitle}
-            onLoad={handleFallbackLoad}
-            onError={handleFallbackError}
-          />
-        );
-
-      case 'error':
-        return (
-          <PDFErrorState
-            errorMessage={errorMessage}
-            onDownload={handleDownload}
-            onOpenInNewTab={handleOpenInNewTab}
-            onRetry={handleRetry}
-          />
-        );
-
-      case 'success':
-        return null; // Le viewer approprié est affiché
-    }
   };
 
   return (
@@ -117,8 +82,13 @@ export const PDFViewer = ({ fileUrl, documentTitle = "Document PDF", onClose }: 
       />
 
       <div className="flex-1 relative">
-        {/* Visionneuse PDF native - une seule tentative */}
-        {(viewerState === 'loading' || (viewerState === 'success' && hasTriedNative)) && (
+        {/* État de chargement */}
+        {viewerState === 'loading' && (
+          <PDFLoadingState />
+        )}
+
+        {/* Visionneuse PDF native */}
+        {(viewerState === 'loading' || viewerState === 'native') && (
           <div className="absolute inset-0">
             <PDFNativeViewer
               fileUrl={fileUrl}
@@ -129,7 +99,7 @@ export const PDFViewer = ({ fileUrl, documentTitle = "Document PDF", onClose }: 
           </div>
         )}
 
-        {/* Visionneuse fallback */}
+        {/* Visionneuse fallback - seulement si en mode fallback */}
         {viewerState === 'fallback' && (
           <div className="absolute inset-0">
             <PDFFallbackViewer
@@ -141,8 +111,15 @@ export const PDFViewer = ({ fileUrl, documentTitle = "Document PDF", onClose }: 
           </div>
         )}
 
-        {/* Overlay pour les états de chargement et d'erreur */}
-        {(viewerState === 'loading' || viewerState === 'error') && renderContent()}
+        {/* État d'erreur */}
+        {viewerState === 'error' && (
+          <PDFErrorState
+            errorMessage={errorMessage}
+            onDownload={handleDownload}
+            onOpenInNewTab={handleOpenInNewTab}
+            onRetry={handleRetry}
+          />
+        )}
       </div>
 
       <PDFViewerFooter />
