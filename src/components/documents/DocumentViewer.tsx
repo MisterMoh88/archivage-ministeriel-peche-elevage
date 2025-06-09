@@ -9,7 +9,8 @@ import { getDocumentHistory } from "@/services/documents/historyService";
 import { DocumentPreview } from "./DocumentPreview";
 import { DocumentDetails } from "./DocumentDetails";
 import { DocumentHistory } from "./DocumentHistory";
-import { PDFViewerPage } from "./PDFViewerPage";
+import { PDFViewer } from "./PDFViewer";
+import { PDFSpecifications } from "./PDFSpecifications";
 import { toast } from "sonner";
 import { handleDownload } from "@/utils/documentUtils";
 import { checkFileExists } from "@/services/documents/previewService";
@@ -82,7 +83,7 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[95vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{document.title}</DialogTitle>
           <DialogDescription>
@@ -91,13 +92,14 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="preview">Aperçu</TabsTrigger>
             <TabsTrigger value="details">Détails</TabsTrigger>
             <TabsTrigger value="history">Historique</TabsTrigger>
+            <TabsTrigger value="specs">Spécifications</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="preview" className="flex-1 overflow-auto relative">
+          <TabsContent value="preview" className="flex-1 overflow-hidden">
             {!documentExists ? (
               <div className="flex flex-col items-center justify-center h-full p-4">
                 <p className="text-destructive font-medium mb-2">Ce document n'est plus disponible dans le stockage</p>
@@ -113,7 +115,7 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
               </div>
             ) : isPDF && documentUrl ? (
               <div className="h-full">
-                <PDFViewerPage 
+                <PDFViewer 
                   fileUrl={documentUrl} 
                   documentTitle={document.title}
                 />
@@ -123,12 +125,16 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
             )}
           </TabsContent>
 
-          <TabsContent value="details" className="space-y-4">
+          <TabsContent value="details" className="space-y-4 overflow-auto">
             <DocumentDetails document={document} />
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4">
+          <TabsContent value="history" className="space-y-4 overflow-auto">
             <DocumentHistory history={documentHistory} isLoading={historyLoading} />
+          </TabsContent>
+
+          <TabsContent value="specs" className="overflow-auto">
+            <PDFSpecifications />
           </TabsContent>
         </Tabs>
 
