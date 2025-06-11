@@ -21,6 +21,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FileText, Search as SearchIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useQuery } from "@tanstack/react-query";
+import { getDocuments } from "@/services/documents/crudService";
+import { getDocumentCategories } from "@/services/documents/categoryService";
+import { useSecureDocumentFilters } from "@/hooks/useSecureDocumentFilters";
+import { DocumentViewer } from "@/components/documents/DocumentViewer";
+import { Document } from "@/types/document";
+import { formatDate } from "@/utils/documentUtils";
 
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,71 +35,40 @@ export default function Search() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const [viewDocument, setViewDocument] = useState<Document | null>(null);
 
-  // Catégories de documents
-  const categories = [
-    "Documents administratifs et réglementaires",
-    "Documents techniques et spécialisés",
-    "Documents financiers et comptables",
-    "Documents de communication et de sensibilisation",
-    "Archives et documentation historique",
-  ];
+  // Fetch documents
+  const { data: documents = [], isLoading: documentsLoading } = useQuery({
+    queryKey: ["search-documents"],
+    queryFn: getDocuments,
+    enabled: searchPerformed,
+  });
 
-  // Données fictives pour démontrer la recherche
-  const searchResults = [
-    {
-      id: "DOC-2023-0001",
-      title: "Arrêté ministériel N°2023-1567",
-      category: "Documents administratifs et réglementaires",
-      type: "Arrêté",
-      date: "23/04/2023",
-      source: "Cabinet du Ministre",
-      reference: "ARR-2023-1567",
-      relevance: 98,
-    },
-    {
-      id: "DOC-2023-0006",
-      title: "Contrat de fourniture d'équipements vétérinaires",
-      category: "Documents financiers et comptables",
-      type: "Marché public",
-      date: "28/03/2023",
-      source: "Direction des Marchés Publics",
-      reference: "MP-2023-0078",
-      relevance: 85,
-      budgetProgram: "822/1.037",
-    },
-    {
-      id: "DOC-2022-0128",
-      title: "Procédure d'inspection sanitaire des produits de la pêche",
-      category: "Documents techniques et spécialisés",
-      type: "Procédure",
-      date: "15/11/2022",
-      source: "Direction Nationale de la Pêche",
-      reference: "PROC-2022-0034",
-      relevance: 72,
-    },
-    {
-      id: "DOC-2022-0097",
-      title: "Rapport d'étude sur les maladies bovines - Région de Sikasso",
-      category: "Documents techniques et spécialisés",
-      type: "Rapport",
-      date: "03/09/2022",
-      source: "Direction Nationale des Services Vétérinaires",
-      reference: "RAP-2022-0097",
-      relevance: 65,
-    },
-    {
-      id: "DOC-2022-0015",
-      title: "Budget du programme d'appui à l'élevage bovin",
-      category: "Documents financiers et comptables",
-      type: "Budget",
-      date: "15/01/2022",
-      source: "Direction Administrative et Financière",
-      reference: "BUD-2022-0015",
-      relevance: 60,
-      budgetProgram: "822/2.090",
-    },
-  ];
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ["document-categories"],
+    queryFn: getDocumentCategories,
+  });
+
+  // Apply filters to documents
+  const filteredDocuments = useSecureDocumentFilters({
+    documents,
+    searchQuery,
+    selectedCategory: selectedCategory || "all",
+    selectedSort: "newest",
+  });
+
+  // Additional filtering based on date range
+  const searchResults = filteredDocuments.filter(doc => {
+    if (dateFrom && doc.document_date < dateFrom) return false;
+    if (dateTo && doc.document_date > dateTo) return false;
+    return true;
+  });
+
+  const getCategoryName = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : "Non catégorisé";
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,8 +106,8 @@ export default function Search() {
               <div className="space-y-3">
                 <Label htmlFor="category">Catégorie</Label>
                 <Select 
-                  onValueChange={(value) => setSelectedCategory(value)}
-                  value={selectedCategory || ""}
+                  onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}
+                  value={selectedCategory || "all"}
                 >
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Toutes les catégories" />
@@ -139,8 +115,8 @@ export default function Search() {
                   <SelectContent>
                     <SelectItem value="all">Toutes les catégories</SelectItem>
                     {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -235,6 +211,21 @@ export default function Search() {
                   résultats
                 </p>
               </div>
+            ) : documentsLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-muted-foreground">Recherche en cours...</p>
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+                <FileText className="h-12 w-12 mb-4" />
+                <h3 className="text-lg font-medium mb-1">
+                  Aucun document trouvé
+                </h3>
+                <p className="text-sm">
+                  Essayez de modifier vos critères de recherche
+                </p>
+              </div>
             ) : (
               <div className="space-y-4">
                 {searchResults.map((result) => (
@@ -248,35 +239,36 @@ export default function Search() {
                     <div className="flex-1">
                       <div className="flex justify-between">
                         <h3 className="font-medium">{result.title}</h3>
-                        <Badge variant="outline" className="ml-2">
-                          {result.relevance}%
-                        </Badge>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-1 text-xs">
-                        <Badge variant="secondary">{result.type}</Badge>
+                        <Badge variant="secondary">{result.document_type}</Badge>
                         <span className="text-muted-foreground">
-                          {result.date}
+                          {formatDate(result.document_date)}
                         </span>
                         <span className="text-muted-foreground">
-                          Réf: {result.reference}
+                          Réf: {result.reference_number}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {result.category} • {result.source}
+                        {getCategoryName(result.category_id)} • {result.issuing_department || "Département non spécifié"}
                       </p>
-                      {result.budgetProgram && (
+                      {result.budget_program && (
                         <div className="bg-ministry-gold/10 p-2 rounded-md mt-2 text-xs">
                           <p>
                             <span className="font-medium">
                               Programme budgétaire:
                             </span>{" "}
-                            {result.budgetProgram}
+                            {result.budget_program}
                           </p>
                         </div>
                       )}
                     </div>
                     <div>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setViewDocument(result)}
+                      >
                         Consulter
                       </Button>
                     </div>
@@ -287,6 +279,15 @@ export default function Search() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Document viewer */}
+      {viewDocument && (
+        <DocumentViewer 
+          document={viewDocument}
+          isOpen={!!viewDocument}
+          onClose={() => setViewDocument(null)}
+        />
+      )}
     </div>
   );
 }

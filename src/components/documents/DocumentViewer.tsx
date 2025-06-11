@@ -6,15 +6,11 @@ import { Document } from "@/types/document";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { getDocumentHistory } from "@/services/documents/historyService";
-import { DocumentPreview } from "./DocumentPreview";
 import { DocumentDetails } from "./DocumentDetails";
 import { DocumentHistory } from "./DocumentHistory";
-import { PDFViewer } from "./PDFViewer";
-import { PDFSpecifications } from "./PDFSpecifications";
 import { toast } from "sonner";
 import { handleDownload } from "@/utils/documentUtils";
 import { checkFileExists } from "@/services/documents/previewService";
-import { getSupabasePublicUrl } from "@/utils/documentUtils";
 
 interface DocumentViewerProps {
   document: Document | null;
@@ -25,7 +21,7 @@ interface DocumentViewerProps {
 export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProps) => {
   if (!document || !isOpen) return null;
   
-  const [activeTab, setActiveTab] = useState<string>("preview");
+  const [activeTab, setActiveTab] = useState<string>("details");
   const [documentExists, setDocumentExists] = useState<boolean>(true);
   
   const { data: documentHistory, isLoading: historyLoading } = useQuery({
@@ -61,26 +57,6 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
     }
   };
 
-  // Amélioration de la détection PDF
-  const isPDF = document.file_type?.toLowerCase().includes('pdf') || 
-                document.file_path?.toLowerCase().endsWith('.pdf') ||
-                document.title?.toLowerCase().endsWith('.pdf');
-
-  const documentUrl = (document?.file_path && documentExists)
-    ? getSupabasePublicUrl(document.file_path)
-    : null;
-
-  useEffect(() => {
-    console.log("Document details:", {
-      title: document.title,
-      fileType: document.file_type,
-      filePath: document.file_path,
-      isPDF: isPDF,
-      documentUrl: documentUrl,
-      exists: documentExists
-    });
-  }, [document, isPDF, documentUrl, documentExists]);
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-6xl max-h-[95vh] flex flex-col">
@@ -92,38 +68,10 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="preview">Aperçu</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="details">Détails</TabsTrigger>
             <TabsTrigger value="history">Historique</TabsTrigger>
-            <TabsTrigger value="specs">Spécifications</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="preview" className="flex-1 overflow-hidden">
-            {!documentExists ? (
-              <div className="flex flex-col items-center justify-center h-full p-4">
-                <p className="text-destructive font-medium mb-2">Ce document n'est plus disponible dans le stockage</p>
-                <p className="text-muted-foreground text-sm text-center mb-4">
-                  Le fichier a peut-être été supprimé ou déplacé.
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => toast.info("Un administrateur a été notifié du problème")}
-                >
-                  Signaler le problème
-                </Button>
-              </div>
-            ) : isPDF && documentUrl ? (
-              <div className="h-full">
-                <PDFViewer 
-                  fileUrl={documentUrl} 
-                  documentTitle={document.title}
-                />
-              </div>
-            ) : (
-              <DocumentPreview document={document} />
-            )}
-          </TabsContent>
 
           <TabsContent value="details" className="space-y-4 overflow-auto">
             <DocumentDetails document={document} />
@@ -131,10 +79,6 @@ export const DocumentViewer = ({ document, isOpen, onClose }: DocumentViewerProp
 
           <TabsContent value="history" className="space-y-4 overflow-auto">
             <DocumentHistory history={documentHistory} isLoading={historyLoading} />
-          </TabsContent>
-
-          <TabsContent value="specs" className="overflow-auto">
-            <PDFSpecifications />
           </TabsContent>
         </Tabs>
 

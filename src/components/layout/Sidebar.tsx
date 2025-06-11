@@ -4,7 +4,6 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   Archive,
-  FileText,
   Home,
   PieChart,
   Search,
@@ -51,7 +50,7 @@ export default function Sidebar() {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Navigation items
+  // Navigation items - Documents supprimé
   const items = [
     {
       icon: Home,
@@ -67,11 +66,6 @@ export default function Sidebar() {
       icon: Upload,
       label: "Ajouter un document",
       href: "/upload",
-    },
-    {
-      icon: FileText,
-      label: "Documents",
-      href: "/documents",
     },
     {
       icon: Search,
