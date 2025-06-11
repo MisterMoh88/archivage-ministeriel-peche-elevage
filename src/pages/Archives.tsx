@@ -68,7 +68,7 @@ export default function Archives() {
     if (!userProfile) return false;
     
     if (userProfile.role === 'admin') return true;
-    if (userProfile.role === 'admin_local') {
+    if (userProfile.role === 'admin_local' || userProfile.role === 'archiviste') {
       return document.issuing_department === userProfile.department;
     }
     return false; // Les utilisateurs normaux ne peuvent pas éditer
@@ -78,7 +78,7 @@ export default function Archives() {
     if (!userProfile) return false;
     
     if (userProfile.role === 'admin') return true;
-    if (userProfile.role === 'admin_local') {
+    if (userProfile.role === 'admin_local' || userProfile.role === 'archiviste') {
       return document.issuing_department === userProfile.department;
     }
     return false; // Les utilisateurs normaux ne peuvent pas supprimer

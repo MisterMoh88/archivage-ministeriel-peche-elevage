@@ -12,14 +12,14 @@ export const createSecureDocument = async (documentData: Partial<Document>, user
       throw new Error("Utilisateur non authentifié");
     }
 
-    // Validation des permissions
-    if (!userProfile || !['admin', 'admin_local'].includes(userProfile.role)) {
+    // Validation des permissions - Archiviste = Admin local
+    if (!userProfile || !['admin', 'admin_local', 'archiviste'].includes(userProfile.role)) {
       throw new Error("Permissions insuffisantes pour créer un document");
     }
 
-    // Pour les admin_local, forcer le département
+    // Pour les admin_local et archivistes, forcer le département
     let finalDocumentData = { ...documentData };
-    if (userProfile.role === 'admin_local') {
+    if (userProfile.role === 'admin_local' || userProfile.role === 'archiviste') {
       finalDocumentData.issuing_department = userProfile.department;
     }
 
@@ -79,8 +79,8 @@ export const updateSecureDocument = async (documentId: string, updates: Partial<
       throw new Error("Utilisateur non authentifié");
     }
 
-    // Validation des permissions
-    if (!userProfile || !['admin', 'admin_local'].includes(userProfile.role)) {
+    // Validation des permissions - Archiviste = Admin local
+    if (!userProfile || !['admin', 'admin_local', 'archiviste'].includes(userProfile.role)) {
       throw new Error("Permissions insuffisantes pour modifier un document");
     }
 
@@ -95,15 +95,15 @@ export const updateSecureDocument = async (documentId: string, updates: Partial<
       throw fetchError;
     }
 
-    // Vérifier que l'admin_local peut modifier ce document
-    if (userProfile.role === 'admin_local' && existingDoc.issuing_department !== userProfile.department) {
+    // Vérifier que l'admin_local/archiviste peut modifier ce document
+    if ((userProfile.role === 'admin_local' || userProfile.role === 'archiviste') && existingDoc.issuing_department !== userProfile.department) {
       throw new Error("Vous ne pouvez modifier que les documents de votre département");
     }
 
-    // Pour les admin_local, s'assurer qu'ils ne changent pas le département
+    // Pour les admin_local et archivistes, s'assurer qu'ils ne changent pas le département
     let finalUpdates = { ...updates };
-    if (userProfile.role === 'admin_local') {
-      // Supprimer issuing_department des mises à jour pour les admin_local
+    if (userProfile.role === 'admin_local' || userProfile.role === 'archiviste') {
+      // Supprimer issuing_department des mises à jour pour les admin_local/archivistes
       delete finalUpdates.issuing_department;
     }
 
@@ -136,13 +136,13 @@ export const deleteSecureDocument = async (documentId: string, userProfile: any)
   try {
     console.log("🔄 Suppression sécurisée d'un document...", { documentId, userProfile });
     
-    // Validation des permissions
-    if (!userProfile || !['admin', 'admin_local'].includes(userProfile.role)) {
+    // Validation des permissions - Archiviste = Admin local
+    if (!userProfile || !['admin', 'admin_local', 'archiviste'].includes(userProfile.role)) {
       throw new Error("Permissions insuffisantes pour supprimer un document");
     }
 
-    // Pour les admin_local, vérifier que le document appartient à leur département
-    if (userProfile.role === 'admin_local') {
+    // Pour les admin_local et archivistes, vérifier que le document appartient à leur département
+    if (userProfile.role === 'admin_local' || userProfile.role === 'archiviste') {
       const { data: doc, error: fetchError } = await supabase
         .from('documents')
         .select('issuing_department')

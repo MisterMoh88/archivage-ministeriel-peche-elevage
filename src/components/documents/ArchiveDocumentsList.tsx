@@ -35,10 +35,10 @@ export const ArchiveDocumentsList = ({
     if (!userProfile) return false;
     
     if (userProfile.role === 'admin') return true;
-    if (userProfile.role === 'admin_local') {
+    if (userProfile.role === 'admin_local' || userProfile.role === 'archiviste') {
       return document.issuing_department === userProfile.department;
     }
-    return false; // Les utilisateurs normaux et archivistes ne peuvent pas éditer
+    return false; // Les utilisateurs normaux ne peuvent pas éditer
   };
 
   // Fonction pour vérifier les permissions de suppression
@@ -46,10 +46,10 @@ export const ArchiveDocumentsList = ({
     if (!userProfile) return false;
     
     if (userProfile.role === 'admin') return true;
-    if (userProfile.role === 'admin_local') {
+    if (userProfile.role === 'admin_local' || userProfile.role === 'archiviste') {
       return document.issuing_department === userProfile.department;
     }
-    return false; // Les utilisateurs normaux et archivistes ne peuvent pas supprimer
+    return false; // Les utilisateurs normaux ne peuvent pas supprimer
   };
 
   if (isLoading) {
