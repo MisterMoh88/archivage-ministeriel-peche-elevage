@@ -23,7 +23,7 @@ interface UserData {
   full_name: string | null;
   department: string | null;
   phone: string | null;
-  role: "admin" | "archiviste" | "utilisateur";
+  role: "admin" | "admin_local" | "archiviste" | "utilisateur";
   status: string | null;
   last_active: string | null;
 }
@@ -34,6 +34,21 @@ interface UserTableProps {
 }
 
 export function UserTable({ users, isLoading }: UserTableProps) {
+  const getRoleDisplayName = (role: UserData['role']) => {
+    switch (role) {
+      case "admin":
+        return "Administrateur";
+      case "admin_local":
+        return "Admin Local";
+      case "archiviste":
+        return "Archiviste";
+      case "utilisateur":
+        return "Utilisateur";
+      default:
+        return role;
+    }
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -80,12 +95,14 @@ export function UserTable({ users, isLoading }: UserTableProps) {
                     variant={
                       user.role === "admin"
                         ? "default"
-                        : user.role === "archiviste"
+                        : user.role === "admin_local"
                         ? "secondary"
+                        : user.role === "archiviste"
+                        ? "outline"
                         : "outline"
                     }
                   >
-                    {user.role}
+                    {getRoleDisplayName(user.role)}
                   </Badge>
                 </TableCell>
                 <TableCell>{user.department}</TableCell>

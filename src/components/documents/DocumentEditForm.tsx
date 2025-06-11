@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Document } from "@/types/document";
+import { Document, UserProfile } from "@/types/document";
 import { toast } from "sonner";
-import { updateDocument } from "@/services/documents/crudService";
+import { updateSecureDocument } from "@/services/documents/secureDocumentService";
 import { Loader2 } from "lucide-react";
 import { DocumentFormFields } from "./form/DocumentFormFields";
 
@@ -14,9 +14,17 @@ interface DocumentEditFormProps {
   onClose: () => void;
   onSuccess: () => void;
   categories: { id: string; name: string }[];
+  userProfile?: UserProfile | null;
 }
 
-export const DocumentEditForm = ({ document, isOpen, onClose, onSuccess, categories }: DocumentEditFormProps) => {
+export const DocumentEditForm = ({ 
+  document, 
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  categories, 
+  userProfile 
+}: DocumentEditFormProps) => {
   // Return early if document is null or dialog is not open
   if (!document || !isOpen) return null;
   
@@ -49,7 +57,7 @@ export const DocumentEditForm = ({ document, isOpen, onClose, onSuccess, categor
 
     try {
       setIsSubmitting(true);
-      await updateDocument(document.id, formData);
+      await updateSecureDocument(document.id, formData, userProfile);
       toast.success("Document mis à jour avec succès");
       onSuccess();
       onClose();

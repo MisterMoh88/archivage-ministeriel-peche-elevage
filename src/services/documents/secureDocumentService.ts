@@ -28,10 +28,27 @@ export const createSecureDocument = async (documentData: Partial<Document>, user
       throw new Error("Le département émetteur est obligatoire");
     }
 
+    // S'assurer que les champs obligatoires sont présents
+    if (!finalDocumentData.category_id || !finalDocumentData.title || !finalDocumentData.document_type) {
+      throw new Error("Les champs obligatoires sont manquants");
+    }
+
     const { data, error } = await supabase
       .from('documents')
       .insert({
-        ...finalDocumentData,
+        title: finalDocumentData.title,
+        reference_number: finalDocumentData.reference_number,
+        document_date: finalDocumentData.document_date,
+        document_type: finalDocumentData.document_type,
+        file_path: finalDocumentData.file_path,
+        file_type: finalDocumentData.file_type,
+        file_size: finalDocumentData.file_size,
+        category_id: finalDocumentData.category_id,
+        description: finalDocumentData.description,
+        issuing_department: finalDocumentData.issuing_department,
+        budget_year: finalDocumentData.budget_year,
+        budget_program: finalDocumentData.budget_program,
+        market_type: finalDocumentData.market_type,
         uploaded_by: user.id,
         upload_date: new Date().toISOString(),
         last_modified: new Date().toISOString()

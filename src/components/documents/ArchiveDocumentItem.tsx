@@ -28,6 +28,8 @@ interface ArchiveDocumentItemProps {
   onView: (doc: Document) => void;
   onEdit: (doc: Document) => void;
   onDelete: (doc: Document) => void;
+  canEdit: boolean;
+  canDelete: boolean;
 }
 
 export const ArchiveDocumentItem = ({
@@ -36,6 +38,8 @@ export const ArchiveDocumentItem = ({
   onView,
   onEdit,
   onDelete,
+  canEdit,
+  canDelete,
 }: ArchiveDocumentItemProps) => {
   const navigate = useNavigate();
   
@@ -158,18 +162,24 @@ export const ArchiveDocumentItem = ({
               <FileText className="h-4 w-4 mr-2" />
               Détails
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(document)}>
-              <FilePen className="h-4 w-4 mr-2" />
-              Modifier
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => onDelete(document)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Supprimer
-            </DropdownMenuItem>
+            {canEdit && (
+              <DropdownMenuItem onClick={() => onEdit(document)}>
+                <FilePen className="h-4 w-4 mr-2" />
+                Modifier
+              </DropdownMenuItem>
+            )}
+            {canDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => onDelete(document)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
