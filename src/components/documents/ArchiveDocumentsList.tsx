@@ -1,4 +1,3 @@
-
 import { Document } from "@/types/document";
 import { ArchiveDocumentItem } from "./ArchiveDocumentItem";
 
@@ -10,7 +9,7 @@ interface ArchiveDocumentsListProps {
   onEdit: (doc: Document) => void;
   onDelete: (doc: Document) => void;
   userProfile?: {
-    role: 'admin' | 'admin_local' | 'utilisateur';
+    role: 'admin' | 'admin_local' | 'archiviste' | 'utilisateur';
     department: string | null;
   } | null;
 }
@@ -39,7 +38,7 @@ export const ArchiveDocumentsList = ({
     if (userProfile.role === 'admin_local') {
       return document.issuing_department === userProfile.department;
     }
-    return false; // Les utilisateurs normaux ne peuvent pas éditer
+    return false; // Les utilisateurs normaux et archivistes ne peuvent pas éditer
   };
 
   // Fonction pour vérifier les permissions de suppression
@@ -50,7 +49,7 @@ export const ArchiveDocumentsList = ({
     if (userProfile.role === 'admin_local') {
       return document.issuing_department === userProfile.department;
     }
-    return false; // Les utilisateurs normaux ne peuvent pas supprimer
+    return false; // Les utilisateurs normaux et archivistes ne peuvent pas supprimer
   };
 
   if (isLoading) {
