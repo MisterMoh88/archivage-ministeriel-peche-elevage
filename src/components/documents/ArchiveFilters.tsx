@@ -20,7 +20,7 @@ interface ArchiveFiltersProps {
   onEdit: (doc: Document) => void;
   onDelete: (doc: Document) => void;
   userProfile?: {
-    role: 'admin' | 'admin_local' | 'utilisateur';
+    role: 'admin' | 'admin_local' | 'archiviste' | 'utilisateur';
     department: string | null;
   } | null;
 }
