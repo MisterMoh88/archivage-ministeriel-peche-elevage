@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,7 +13,6 @@ import DocumentViewerPage from "./pages/DocumentViewerPage";
 // Pages
 import Dashboard from "./pages/Dashboard";
 import Archives from "./pages/Archives";
-import Documents from "./pages/Documents";
 import Upload from "./pages/Upload";
 import Search from "./pages/Search";
 import Stats from "./pages/Stats";
@@ -56,11 +56,6 @@ const App = () => {
                 <Route path="/archives" element={
                   <AuthGuard>
                     <MainLayout><Archives /></MainLayout>
-                  </AuthGuard>
-                } />
-                <Route path="/documents" element={
-                  <AuthGuard>
-                    <MainLayout><Documents /></MainLayout>
                   </AuthGuard>
                 } />
                 <Route path="/upload" element={

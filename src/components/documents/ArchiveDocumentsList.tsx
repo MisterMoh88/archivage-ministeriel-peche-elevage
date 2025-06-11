@@ -9,6 +9,10 @@ interface ArchiveDocumentsListProps {
   onView: (doc: Document) => void;
   onEdit: (doc: Document) => void;
   onDelete: (doc: Document) => void;
+  userProfile?: {
+    role: 'admin' | 'admin_local' | 'utilisateur';
+    department: string | null;
+  } | null;
 }
 
 export const ArchiveDocumentsList = ({
@@ -18,12 +22,36 @@ export const ArchiveDocumentsList = ({
   onView,
   onEdit,
   onDelete,
+  userProfile,
 }: ArchiveDocumentsListProps) => {
   console.log("📋 ArchiveDocumentsList render:", {
     documentsCount: documents.length,
     isLoading,
-    sampleDocument: documents[0] || null
+    sampleDocument: documents[0] || null,
+    userRole: userProfile?.role
   });
+
+  // Fonction pour vérifier les permissions d'édition
+  const canEditDocument = (document: Document) => {
+    if (!userProfile) return false;
+    
+    if (userProfile.role === 'admin') return true;
+    if (userProfile.role === 'admin_local') {
+      return document.issuing_department === userProfile.department;
+    }
+    return false; // Les utilisateurs normaux ne peuvent pas éditer
+  };
+
+  // Fonction pour vérifier les permissions de suppression
+  const canDeleteDocument = (document: Document) => {
+    if (!userProfile) return false;
+    
+    if (userProfile.role === 'admin') return true;
+    if (userProfile.role === 'admin_local') {
+      return document.issuing_department === userProfile.department;
+    }
+    return false; // Les utilisateurs normaux ne peuvent pas supprimer
+  };
 
   if (isLoading) {
     return (
@@ -53,7 +81,10 @@ export const ArchiveDocumentsList = ({
         console.log(`📄 Rendu document ${index + 1}:`, {
           id: doc.id,
           title: doc.title,
-          categoryId: doc.category_id
+          categoryId: doc.category_id,
+          department: doc.issuing_department,
+          canEdit: canEditDocument(doc),
+          canDelete: canDeleteDocument(doc)
         });
         
         return (
@@ -64,6 +95,8 @@ export const ArchiveDocumentsList = ({
             onView={onView}
             onEdit={onEdit}
             onDelete={onDelete}
+            canEdit={canEditDocument(doc)}
+            canDelete={canDeleteDocument(doc)}
           />
         );
       })}

@@ -66,7 +66,7 @@ interface UserFormValues {
 const UserFormSchema = z.object({
   email: z.string().email("Adresse e-mail invalide"),
   full_name: z.string().min(3, "Le nom complet doit contenir au moins 3 caractères"),
-  role: z.enum(["admin", "archiviste", "utilisateur"] as const),
+  role: z.enum(["admin", "admin_local", "archiviste", "utilisateur"] as const),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères").optional(),
   department: z.string().optional(),
 });
@@ -316,10 +316,27 @@ export function UserManagement() {
     switch (role) {
       case "admin":
         return "default";
-      case "archiviste":
+      case "admin_local":
         return "secondary";
+      case "archiviste":
+        return "outline";
       default:
         return "outline";
+    }
+  };
+
+  const getRoleDisplayName = (role: UserRole) => {
+    switch (role) {
+      case "admin":
+        return "Administrateur";
+      case "admin_local":
+        return "Admin Local";
+      case "archiviste":
+        return "Archiviste";
+      case "utilisateur":
+        return "Utilisateur";
+      default:
+        return role;
     }
   };
 
@@ -364,11 +381,7 @@ export function UserManagement() {
                     <TableCell>{user.email || "Non renseigné"}</TableCell>
                     <TableCell>
                       <Badge variant={getRoleBadgeVariant(user.role as UserRole)}>
-                        {user.role === "admin" 
-                          ? "Administrateur" 
-                          : user.role === "archiviste" 
-                            ? "Archiviste" 
-                            : "Utilisateur"}
+                        {getRoleDisplayName(user.role as UserRole)}
                       </Badge>
                     </TableCell>
                     <TableCell>{user.department || "Non renseigné"}</TableCell>
@@ -504,6 +517,7 @@ export function UserManagement() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="admin">Administrateur</SelectItem>
+                        <SelectItem value="admin_local">Administrateur Local</SelectItem>
                         <SelectItem value="archiviste">Archiviste</SelectItem>
                         <SelectItem value="utilisateur">Utilisateur</SelectItem>
                       </SelectContent>

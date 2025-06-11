@@ -206,6 +206,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_document: {
+        Args: { doc_department: string }
+        Returns: boolean
+      }
+      can_modify_documents: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       create_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -218,7 +226,7 @@ export type Database = {
     Enums: {
       document_status: "actif" | "archivé"
       market_type: "DC" | "DRPR" | "DRPO" | "AAO"
-      user_role: "admin" | "archiviste" | "utilisateur"
+      user_role: "admin" | "archiviste" | "utilisateur" | "admin_local"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -336,7 +344,7 @@ export const Constants = {
     Enums: {
       document_status: ["actif", "archivé"],
       market_type: ["DC", "DRPR", "DRPO", "AAO"],
-      user_role: ["admin", "archiviste", "utilisateur"],
+      user_role: ["admin", "archiviste", "utilisateur", "admin_local"],
     },
   },
 } as const

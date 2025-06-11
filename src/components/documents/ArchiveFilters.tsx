@@ -19,6 +19,10 @@ interface ArchiveFiltersProps {
   onView: (doc: Document) => void;
   onEdit: (doc: Document) => void;
   onDelete: (doc: Document) => void;
+  userProfile?: {
+    role: 'admin' | 'admin_local' | 'utilisateur';
+    department: string | null;
+  } | null;
 }
 
 export const ArchiveFilters = ({
@@ -35,6 +39,7 @@ export const ArchiveFilters = ({
   onView,
   onEdit,
   onDelete,
+  userProfile,
 }: ArchiveFiltersProps) => {
   return (
     <>
@@ -76,6 +81,7 @@ export const ArchiveFilters = ({
               onView={onView}
               onEdit={onEdit}
               onDelete={onDelete}
+              userProfile={userProfile}
             />
           </div>
         </TabsContent>

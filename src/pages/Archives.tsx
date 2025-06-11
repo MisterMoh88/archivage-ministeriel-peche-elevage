@@ -7,10 +7,14 @@ import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { DocumentEditForm } from "@/components/documents/DocumentEditForm";
 import { DocumentDeleteConfirm } from "@/components/documents/DocumentDeleteConfirm";
 import { ArchiveFilters } from "@/components/documents/ArchiveFilters";
-import { useDocumentFilters } from "@/hooks/useDocumentFilters";
+import { useSecureDocumentFilters } from "@/hooks/useSecureDocumentFilters";
+import { useAuth } from "@/context/AuthContext";
 import { Document } from "@/types/document";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 export default function Archives() {
+  const { userProfile } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSort, setSelectedSort] = useState<string>("newest");
@@ -42,7 +46,7 @@ export default function Archives() {
     retry: 2,
   });
 
-  const filteredDocuments = useDocumentFilters({
+  const filteredDocuments = useSecureDocumentFilters({
     documents,
     searchQuery,
     selectedCategory,
@@ -59,6 +63,41 @@ export default function Archives() {
     refetch();
   };
 
+  // Vérifier les permissions pour l'édition et la suppression
+  const canEditDocument = (document: Document) => {
+    if (!userProfile) return false;
+    
+    if (userProfile.role === 'admin') return true;
+    if (userProfile.role === 'admin_local') {
+      return document.issuing_department === userProfile.department;
+    }
+    return false; // Les utilisateurs normaux ne peuvent pas éditer
+  };
+
+  const canDeleteDocument = (document: Document) => {
+    if (!userProfile) return false;
+    
+    if (userProfile.role === 'admin') return true;
+    if (userProfile.role === 'admin_local') {
+      return document.issuing_department === userProfile.department;
+    }
+    return false; // Les utilisateurs normaux ne peuvent pas supprimer
+  };
+
+  // Handler sécurisé pour l'édition
+  const handleEdit = (doc: Document) => {
+    if (canEditDocument(doc)) {
+      setEditDocument(doc);
+    }
+  };
+
+  // Handler sécurisé pour la suppression
+  const handleDelete = (doc: Document) => {
+    if (canDeleteDocument(doc)) {
+      setDeleteDocument(doc);
+    }
+  };
+
   // Debug logging
   useEffect(() => {
     console.log("🏛️ Archives page - État actuel:", {
@@ -70,9 +109,11 @@ export default function Archives() {
       error: error?.message,
       searchQuery,
       selectedCategory,
-      selectedSort
+      selectedSort,
+      userRole: userProfile?.role,
+      userDepartment: userProfile?.department
     });
-  }, [documents, filteredDocuments, categories, isLoading, categoriesLoading, error, searchQuery, selectedCategory, selectedSort]);
+  }, [documents, filteredDocuments, categories, isLoading, categoriesLoading, error, searchQuery, selectedCategory, selectedSort, userProfile]);
   
   if (error) {
     console.error("❌ Erreur dans Archives:", error);
@@ -103,6 +144,19 @@ export default function Archives() {
     <div className="page-container">
       <h1 className="section-title">Archives documentaires</h1>
 
+      {/* Message d'information sur le département */}
+      {userProfile && userProfile.department && (
+        <Alert className="mb-6">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            {userProfile.role === 'admin' 
+              ? "Vous consultez les archives de tous les départements (accès administrateur)"
+              : `Vous consultez les archives du département : ${userProfile.department}`
+            }
+          </AlertDescription>
+        </Alert>
+      )}
+
       <ArchiveFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -115,8 +169,9 @@ export default function Archives() {
         isLoading={isLoading || categoriesLoading}
         getCategoryName={getCategoryName}
         onView={setViewDocument}
-        onEdit={setEditDocument}
-        onDelete={setDeleteDocument}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        userProfile={userProfile}
       />
 
       {/* Document details viewer */}
@@ -136,6 +191,7 @@ export default function Archives() {
           onClose={() => setEditDocument(null)}
           onSuccess={handleDocumentChange}
           categories={categories}
+          userProfile={userProfile}
         />
       )}
 

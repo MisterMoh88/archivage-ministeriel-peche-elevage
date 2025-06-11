@@ -8,7 +8,7 @@ import { toast } from "sonner";
 type UserProfile = {
   id: string;
   full_name: string | null;
-  role: 'admin' | 'archiviste' | 'utilisateur';
+  role: 'admin' | 'admin_local' | 'archiviste' | 'utilisateur';
   department: string | null;
   status: string;
 };

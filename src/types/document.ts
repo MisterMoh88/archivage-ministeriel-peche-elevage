@@ -1,3 +1,4 @@
+
 export interface Document {
   id: string;
   title: string;
@@ -21,7 +22,7 @@ export interface Document {
   uploaded_by: string;
   last_modified?: string;
   modified_by?: string;
-  status?: "actif" | "archivé"; // Changed from "actif" | "archive" to match database enum
+  status?: "actif" | "archivé";
 }
 
 export interface DocumentHistory {
@@ -36,6 +37,14 @@ export interface DocumentHistory {
       before: Partial<Document>;
       after: Partial<Document>;
     };
-  } | string; // Added string type to handle simple string details
+  } | string;
   user_fullname?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  full_name: string | null;
+  role: 'admin' | 'admin_local' | 'archiviste' | 'utilisateur';
+  department: string | null;
+  status: string;
 }
