@@ -13,6 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { CategoryManagement } from "@/components/admin/CategoryManagement";
 import { SystemSettings } from "@/components/admin/SystemSettings";
+import { DashboardSettings } from "@/components/admin/DashboardSettings";
+import { SecuritySettings } from "@/components/admin/SecuritySettings";
+import { ActivityLogs } from "@/components/admin/ActivityLogs";
+import { AdvancedSettings } from "@/components/admin/AdvancedSettings";
 
 export function AdminTabs() {
   const [activeTab, setActiveTab] = useState("users");
@@ -65,24 +69,16 @@ export function AdminTabs() {
         <SystemSettings />
       </TabsContent>
       <TabsContent value="dashboard">
-        <div className="border rounded-lg p-8 text-center text-muted-foreground">
-          Configuration du tableau de bord - En développement
-        </div>
+        <DashboardSettings />
       </TabsContent>
       <TabsContent value="security">
-        <div className="border rounded-lg p-8 text-center text-muted-foreground">
-          Paramètres de sécurité - En développement
-        </div>
+        <SecuritySettings />
       </TabsContent>
       <TabsContent value="logs">
-        <div className="border rounded-lg p-8 text-center text-muted-foreground">
-          Journaux d'activité - En développement
-        </div>
+        <ActivityLogs />
       </TabsContent>
       <TabsContent value="advanced">
-        <div className="border rounded-lg p-8 text-center text-muted-foreground">
-          Paramètres avancés - En développement
-        </div>
+        <AdvancedSettings />
       </TabsContent>
     </Tabs>
   );
