@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Session, User, AuthResponse } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +23,9 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Délai d'inactivité en millisecondes (10 minutes)
+const INACTIVITY_TIMEOUT = 10 * 60 * 1000;
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -31,6 +33,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Références pour gérer le timer d'inactivité
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -53,6 +59,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Fonction pour déconnecter l'utilisateur pour inactivité
+  const handleInactivityLogout = useCallback(async () => {
+    console.log("Déconnexion automatique pour inactivité");
+    toast.info("Vous avez été déconnecté pour inactivité");
+    await signOut();
+  }, []);
+
+  // Fonction pour afficher un avertissement avant déconnexion
+  const showInactivityWarning = useCallback(() => {
+    toast.warning("Vous serez déconnecté dans 1 minute pour inactivité. Bougez la souris pour rester connecté.");
+  }, []);
+
+  // Fonction pour réinitialiser le timer d'inactivité
+  const resetInactivityTimer = useCallback(() => {
+    // Nettoyer les timers existants
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+    }
+
+    // Ne démarrer le timer que si l'utilisateur est connecté
+    if (user && session) {
+      // Timer pour l'avertissement (9 minutes)
+      warningTimerRef.current = setTimeout(() => {
+        showInactivityWarning();
+      }, INACTIVITY_TIMEOUT - 60000);
+
+      // Timer pour la déconnexion (10 minutes)
+      inactivityTimerRef.current = setTimeout(() => {
+        handleInactivityLogout();
+      }, INACTIVITY_TIMEOUT);
+    }
+  }, [user, session, handleInactivityLogout, showInactivityWarning]);
+
+  // Gestionnaire d'événements pour détecter l'activité
+  const handleUserActivity = useCallback(() => {
+    if (user && session) {
+      resetInactivityTimer();
+    }
+  }, [user, session, resetInactivityTimer]);
+
+  // Configuration des écouteurs d'événements pour détecter l'activité
+  useEffect(() => {
+    if (user && session) {
+      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+      
+      // Ajouter les écouteurs d'événements
+      events.forEach(event => {
+        document.addEventListener(event, handleUserActivity, true);
+      });
+
+      // Démarrer le timer d'inactivité
+      resetInactivityTimer();
+
+      // Nettoyer les écouteurs lors du démontage
+      return () => {
+        events.forEach(event => {
+          document.removeEventListener(event, handleUserActivity, true);
+        });
+        
+        if (inactivityTimerRef.current) {
+          clearTimeout(inactivityTimerRef.current);
+        }
+        if (warningTimerRef.current) {
+          clearTimeout(warningTimerRef.current);
+        }
+      };
+    }
+  }, [user, session, handleUserActivity, resetInactivityTimer]);
+
   useEffect(() => {
     console.log("Initializing auth state");
     setIsLoading(true);
@@ -73,6 +151,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }, 0);
       } else {
         setUserProfile(null);
+        // Nettoyer les timers si l'utilisateur se déconnecte
+        if (inactivityTimerRef.current) {
+          clearTimeout(inactivityTimerRef.current);
+        }
+        if (warningTimerRef.current) {
+          clearTimeout(warningTimerRef.current);
+        }
       }
 
       // Handle specific auth events
@@ -165,6 +250,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Attempting sign out");
       setIsLoading(true);
+      
+      // Nettoyer les timers d'inactivité
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      if (warningTimerRef.current) {
+        clearTimeout(warningTimerRef.current);
+      }
       
       const { error } = await supabase.auth.signOut();
       
