@@ -7,26 +7,32 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FileUploadAreaProps {
-  onFileChange: (file: File | null) => void;
-  error?: string | null;
+  onFileChange: (files: File[]) => void;
+  errors?: string[] | null;
+  maxFiles?: number;
 }
 
-export const FileUploadArea = ({ onFileChange, error }: FileUploadAreaProps) => {
-  const [fileSelected, setFileSelected] = useState(false);
-  const [fileName, setFileName] = useState("");
+export const FileUploadArea = ({ onFileChange, errors, maxFiles = 5 }: FileUploadAreaProps) => {
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setFileSelected(true);
-      setFileName(file.name);
-      onFileChange(file);
-    } else {
-      setFileSelected(false);
-      setFileName("");
-      onFileChange(null);
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      updateFiles(files);
     }
+  };
+
+  const updateFiles = (newFiles: File[]) => {
+    const totalFiles = selectedFiles.length + newFiles.length;
+    
+    if (totalFiles > maxFiles) {
+      return;
+    }
+
+    const updatedFiles = [...selectedFiles, ...newFiles];
+    setSelectedFiles(updatedFiles);
+    onFileChange(updatedFiles);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -42,35 +48,40 @@ export const FileUploadArea = ({ onFileChange, error }: FileUploadAreaProps) => 
     e.preventDefault();
     setIsDragging(false);
     
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      setFileSelected(true);
-      setFileName(file.name);
-      onFileChange(file);
+    if (e.dataTransfer.files) {
+      const files = Array.from(e.dataTransfer.files);
+      updateFiles(files);
     }
   };
 
-  const handleRemoveFile = () => {
-    setFileSelected(false);
-    setFileName("");
-    onFileChange(null);
+  const removeFile = (index: number) => {
+    const updatedFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(updatedFiles);
+    onFileChange(updatedFiles);
   };
+
+  const removeAllFiles = () => {
+    setSelectedFiles([]);
+    onFileChange([]);
+  };
+
+  const hasErrors = errors && errors.length > 0;
 
   return (
     <>
       <div 
-        className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center bg-background transition-colors ${isDragging ? 'border-ministry-blue bg-ministry-blue/5' : ''} ${error ? 'border-red-500' : ''}`}
+        className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center bg-background transition-colors ${isDragging ? 'border-ministry-blue bg-ministry-blue/5' : ''} ${hasErrors ? 'border-red-500' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <FileUp className={`h-10 w-10 mb-4 ${error ? 'text-destructive' : 'text-muted-foreground'}`} />
+        <FileUp className={`h-10 w-10 mb-4 ${hasErrors ? 'text-destructive' : 'text-muted-foreground'}`} />
         <div className="text-center space-y-2">
-          <h3 className="font-medium">Glissez-déposez votre fichier ici</h3>
+          <h3 className="font-medium">Glissez-déposez vos fichiers ici</h3>
           <p className="text-sm text-muted-foreground">ou</p>
           <Label
             htmlFor="file-upload"
-            className={`${error ? 'bg-destructive' : 'bg-ministry-blue'} text-white rounded-md py-2 px-4 cursor-pointer hover:opacity-90 transition-colors`}
+            className={`${hasErrors ? 'bg-destructive' : 'bg-ministry-blue'} text-white rounded-md py-2 px-4 cursor-pointer hover:opacity-90 transition-colors`}
           >
             Parcourir les fichiers
           </Label>
@@ -80,35 +91,72 @@ export const FileUploadArea = ({ onFileChange, error }: FileUploadAreaProps) => 
             className="hidden"
             onChange={handleFileChange}
             accept=".pdf,.docx,.xlsx,.pptx,.jpg,.jpeg,.png"
+            multiple
           />
+          <p className="text-xs text-muted-foreground mt-2">
+            Maximum {maxFiles} fichiers • PDF, DOCX, XLSX, PPTX, JPG, PNG (Max: 20MB chacun)
+          </p>
         </div>
       </div>
 
-      {error && (
-        <Alert variant="destructive" className="mt-2">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      {hasErrors && (
+        <div className="mt-2 space-y-2">
+          {errors?.map((error, index) => (
+            <Alert key={index} variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ))}
+        </div>
       )}
 
-      {fileSelected && (
-        <div className={`mt-4 p-3 border rounded-lg flex items-center justify-between ${error ? 'bg-destructive/10' : 'bg-green-50 dark:bg-green-900/20'}`}>
-          <div className="flex items-center gap-2">
-            {error ? (
-              <AlertCircle className="h-5 w-5 text-destructive" />
-            ) : (
-              <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-            )}
-            <span className="text-sm">{fileName}</span>
+      {selectedFiles.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium">Fichiers sélectionnés ({selectedFiles.length}/{maxFiles})</h4>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={removeAllFiles}
+              type="button"
+            >
+              Tout supprimer
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleRemoveFile}
-            type="button"
-          >
-            <XCircle className="h-5 w-5 text-muted-foreground" />
-          </Button>
+          
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {selectedFiles.map((file, index) => {
+              const fileError = errors?.[index];
+              return (
+                <div 
+                  key={index}
+                  className={`p-3 border rounded-lg flex items-center justify-between ${fileError ? 'bg-destructive/10 border-destructive' : 'bg-green-50 dark:bg-green-900/20'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    {fileError ? (
+                      <AlertCircle className="h-5 w-5 text-destructive" />
+                    ) : (
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    )}
+                    <div>
+                      <span className="text-sm">{file.name}</span>
+                      <p className="text-xs text-muted-foreground">
+                        {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeFile(index)}
+                    type="button"
+                  >
+                    <XCircle className="h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </>
