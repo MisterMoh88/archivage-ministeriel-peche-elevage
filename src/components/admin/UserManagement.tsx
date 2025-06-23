@@ -55,6 +55,12 @@ interface User {
   last_active: string | null;
 }
 
+interface Department {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
 interface UserFormValues {
   email: string;
   full_name: string;
@@ -122,6 +128,24 @@ export function UserManagement() {
       }
 
       return profiles as User[];
+    },
+  });
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ["departments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("departments")
+        .select("id, name, is_active")
+        .eq("is_active", true)
+        .order("name");
+
+      if (error) {
+        console.error("Error fetching departments:", error);
+        return [];
+      }
+
+      return data as Department[];
     },
   });
 
@@ -533,9 +557,21 @@ export function UserManagement() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Département</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Département ou service" />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un département" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Aucun département</SelectItem>
+                        {departments.map((department) => (
+                          <SelectItem key={department.id} value={department.name}>
+                            {department.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

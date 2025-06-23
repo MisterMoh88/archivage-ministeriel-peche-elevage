@@ -1,83 +1,57 @@
 
-import { useState } from "react";
-import {
-  Users,
-  FileText,
-  Palette,
-  LayoutDashboard,
-  Shield,
-  Activity,
-  Settings
-} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserManagement } from "@/components/admin/UserManagement";
-import { CategoryManagement } from "@/components/admin/CategoryManagement";
-import { SystemSettings } from "@/components/admin/SystemSettings";
-import { DashboardSettings } from "@/components/admin/DashboardSettings";
-import { SecuritySettings } from "@/components/admin/SecuritySettings";
-import { ActivityLogs } from "@/components/admin/ActivityLogs";
-import { AdvancedSettings } from "@/components/admin/AdvancedSettings";
+import { UserManagement } from "./UserManagement";
+import { CategoryManagement } from "./CategoryManagement";
+import { SystemSettings } from "./SystemSettings";
+import { SecuritySettings } from "./SecuritySettings";
+import { ActivityLogs } from "./ActivityLogs";
+import { AdvancedSettings } from "./AdvancedSettings";
+import { DashboardSettings } from "./DashboardSettings";
+import { DepartmentManagement } from "./DepartmentManagement";
 
 export function AdminTabs() {
-  const [activeTab, setActiveTab] = useState("users");
-
   return (
-    <Tabs
-      defaultValue="users"
-      value={activeTab}
-      onValueChange={setActiveTab}
-      className="space-y-6"
-    >
-      <TabsList className="grid grid-cols-3 md:grid-cols-7 lg:w-full">
-        <TabsTrigger value="users" className="flex gap-2 items-center">
-          <Users className="h-4 w-4" />
-          <span className="hidden sm:inline">Utilisateurs</span>
-        </TabsTrigger>
-        <TabsTrigger value="categories" className="flex gap-2 items-center">
-          <FileText className="h-4 w-4" />
-          <span className="hidden sm:inline">Catégories</span>
-        </TabsTrigger>
-        <TabsTrigger value="interface" className="flex gap-2 items-center">
-          <Palette className="h-4 w-4" />
-          <span className="hidden sm:inline">Paramètres</span>
-        </TabsTrigger>
-        <TabsTrigger value="dashboard" className="flex gap-2 items-center">
-          <LayoutDashboard className="h-4 w-4" />
-          <span className="hidden sm:inline">Tableau de bord</span>
-        </TabsTrigger>
-        <TabsTrigger value="security" className="flex gap-2 items-center">
-          <Shield className="h-4 w-4" />
-          <span className="hidden sm:inline">Sécurité</span>
-        </TabsTrigger>
-        <TabsTrigger value="logs" className="flex gap-2 items-center">
-          <Activity className="h-4 w-4" />
-          <span className="hidden sm:inline">Journaux</span>
-        </TabsTrigger>
-        <TabsTrigger value="advanced" className="flex gap-2 items-center">
-          <Settings className="h-4 w-4" />
-          <span className="hidden sm:inline">Avancé</span>
-        </TabsTrigger>
+    <Tabs defaultValue="users" className="w-full">
+      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+        <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+        <TabsTrigger value="departments">Départements</TabsTrigger>
+        <TabsTrigger value="categories">Catégories</TabsTrigger>
+        <TabsTrigger value="system">Système</TabsTrigger>
+        <TabsTrigger value="security">Sécurité</TabsTrigger>
+        <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
+        <TabsTrigger value="logs">Journaux</TabsTrigger>
+        <TabsTrigger value="advanced">Avancé</TabsTrigger>
       </TabsList>
-
-      <TabsContent value="users">
+      
+      <TabsContent value="users" className="mt-6">
         <UserManagement />
       </TabsContent>
-      <TabsContent value="categories">
+      
+      <TabsContent value="departments" className="mt-6">
+        <DepartmentManagement />
+      </TabsContent>
+      
+      <TabsContent value="categories" className="mt-6">
         <CategoryManagement />
       </TabsContent>
-      <TabsContent value="interface">
+      
+      <TabsContent value="system" className="mt-6">
         <SystemSettings />
       </TabsContent>
-      <TabsContent value="dashboard">
-        <DashboardSettings />
-      </TabsContent>
-      <TabsContent value="security">
+      
+      <TabsContent value="security" className="mt-6">
         <SecuritySettings />
       </TabsContent>
-      <TabsContent value="logs">
+      
+      <TabsContent value="dashboard" className="mt-6">
+        <DashboardSettings />
+      </TabsContent>
+      
+      <TabsContent value="logs" className="mt-6">
         <ActivityLogs />
       </TabsContent>
-      <TabsContent value="advanced">
+      
+      <TabsContent value="advanced" className="mt-6">
         <AdvancedSettings />
       </TabsContent>
     </Tabs>
