@@ -155,7 +155,7 @@ export function UserManagement() {
       email: "",
       full_name: "",
       role: "utilisateur",
-      department: "",
+      department: "none",
     },
   });
 
@@ -180,7 +180,7 @@ export function UserManagement() {
           .update({
             full_name: values.full_name,
             role: values.role,
-            department: values.department,
+            department: values.department === "none" ? null : values.department,
             status: "Actif",
           })
           .eq("id", authData.user.id);
@@ -212,7 +212,7 @@ export function UserManagement() {
         .update({
           full_name: values.full_name,
           role: values.role,
-          department: values.department,
+          department: values.department === "none" ? null : values.department,
         })
         .eq("id", editingUser.id);
 
@@ -297,7 +297,7 @@ export function UserManagement() {
         email: user.email || "",
         full_name: user.full_name || "",
         role: user.role,
-        department: user.department || "",
+        department: user.department || "none",
         password: "",
       });
     } else {
@@ -306,7 +306,7 @@ export function UserManagement() {
         email: "",
         full_name: "",
         role: "utilisateur",
-        department: "",
+        department: "none",
         password: "",
       });
     }
@@ -564,7 +564,7 @@ export function UserManagement() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Aucun département</SelectItem>
+                        <SelectItem value="none">Aucun département</SelectItem>
                         {departments.map((department) => (
                           <SelectItem key={department.id} value={department.name}>
                             {department.name}
