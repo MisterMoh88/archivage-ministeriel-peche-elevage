@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,39 +7,40 @@ import { EyeIcon, EyeOffIcon, LockIcon, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, isLoading, user } = useAuth();
+  const {
+    signIn,
+    isLoading,
+    user
+  } = useAuth();
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   useEffect(() => {
     // Redirect to the home page if the user is already connected
     if (user) {
-      navigate("/", { replace: true });
+      navigate("/", {
+        replace: true
+      });
     }
   }, [user, navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
-    
     if (!email || !password) {
       setErrorMessage("Veuillez remplir tous les champs");
       return;
     }
-    
     try {
       setIsSubmitting(true);
       await signIn(email, password);
       // On success, the AuthContext will handle redirection
     } catch (error: any) {
       console.error("Login handler error:", error);
-      
+
       // More specific error messages based on the error type
       if (error.message?.includes("Invalid login credentials")) {
         setErrorMessage("Email ou mot de passe incorrect");
@@ -54,9 +54,7 @@ export default function Login() {
       setIsSubmitting(false);
     }
   };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <div className="flex flex-col items-center">
@@ -78,66 +76,29 @@ export default function Login() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {errorMessage && (
-              <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md text-sm">
+            {errorMessage && <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md text-sm">
                 {errorMessage}
-              </div>
-            )}
+              </div>}
             
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="nom.prenom@elevage-peche.gouv.ml"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isSubmitting || isLoading}
-                  required
-                />
+                <Input id="email" type="email" placeholder="nom.prenom@elevage-peche.gouv.ml" value={email} onChange={e => setEmail(e.target.value)} disabled={isSubmitting || isLoading} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe</Label>
                 <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isSubmitting || isLoading}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isSubmitting || isLoading}
-                  >
-                    {showPassword ? (
-                      <EyeOffIcon className="h-4 w-4" />
-                    ) : (
-                      <EyeIcon className="h-4 w-4" />
-                    )}
+                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={isSubmitting || isLoading} required />
+                  <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)} disabled={isSubmitting || isLoading}>
+                    {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
-              <Button 
-                type="submit" 
-                className="w-full bg-ministry-blue hover:bg-ministry-darkBlue"
-                disabled={isSubmitting || isLoading}
-              >
-                {isSubmitting || isLoading ? (
-                  <>
+              <Button type="submit" className="w-full bg-ministry-blue hover:bg-ministry-darkBlue" disabled={isSubmitting || isLoading}>
+                {isSubmitting || isLoading ? <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Connexion en cours...
-                  </>
-                ) : (
-                  "Se connecter"
-                )}
+                  </> : "Se connecter"}
               </Button>
             </form>
           </CardContent>
@@ -151,14 +112,9 @@ export default function Login() {
               <LockIcon className="h-3 w-3" /> Accès sécurisé
             </div>
             {/* Information de connexion pour l'administrateur (à supprimer en production) */}
-            <div className="mt-4 p-2 border border-dashed border-gray-300 rounded text-xs text-gray-500">
-              <p className="font-semibold">Compte administrateur (temporaire):</p>
-              <p>Email: mahamadoutraorecp@yahoo.com</p>
-              <p>Mot de passe: Admin@2025</p>
-            </div>
+            
           </CardFooter>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 }
