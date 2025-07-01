@@ -127,7 +127,7 @@ export const usePDFOptimization = ({
     }, timeoutMs);
   }, [timeoutMs]);
 
-  const clearTimeout = useCallback(() => {
+  const clearTimeoutHandler = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -181,7 +181,7 @@ export const usePDFOptimization = ({
     startTimeout();
     
     return () => {
-      clearTimeout();
+      clearTimeoutHandler();
     };
   }, [fileUrl]);
 
@@ -193,7 +193,7 @@ export const usePDFOptimization = ({
       cacheMetadata,
       preloadNextPages,
       startTimeout,
-      clearTimeout,
+      clearTimeout: clearTimeoutHandler,
       recordLoadTime,
       getOptimizedUrl
     }

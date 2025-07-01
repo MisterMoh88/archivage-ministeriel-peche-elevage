@@ -147,17 +147,15 @@ export const PDFOptimizedViewer = ({
     }
   }, [loadingState.totalPages, pageNavigationPluginInstance, saveReadingPosition]);
 
-  // Contrôles de zoom
+  // Contrôles de zoom - Utilisation des méthodes correctes du plugin
   const handleZoomIn = useCallback(() => {
-    const newZoom = Math.min(currentZoom * 1.2, 3.0);
-    setCurrentZoom(newZoom);
-    zoomPluginInstance.zoom(newZoom);
+    zoomPluginInstance.zoomTo(currentZoom * 1.2);
+    setCurrentZoom(prev => Math.min(prev * 1.2, 3.0));
   }, [currentZoom, zoomPluginInstance]);
 
   const handleZoomOut = useCallback(() => {
-    const newZoom = Math.max(currentZoom / 1.2, 0.5);
-    setCurrentZoom(newZoom);
-    zoomPluginInstance.zoom(newZoom);
+    zoomPluginInstance.zoomTo(currentZoom / 1.2);
+    setCurrentZoom(prev => Math.max(prev / 1.2, 0.5));
   }, [currentZoom, zoomPluginInstance]);
 
   // Téléchargement du document
@@ -187,6 +185,15 @@ export const PDFOptimizedViewer = ({
         </div>
         {props.annotationLayer.children}
       </>
+    );
+  }, []);
+
+  // Composant d'erreur pour renderError
+  const renderErrorComponent = useCallback(() => {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-destructive">Erreur lors du chargement du PDF</p>
+      </div>
     );
   }, []);
 
@@ -270,7 +277,7 @@ export const PDFOptimizedViewer = ({
             ]}
             onDocumentLoad={handleDocumentLoad}
             onPageChange={handlePageChange}
-            renderError={handleError}
+            renderError={renderErrorComponent}
             renderPage={renderPage}
             defaultScale={SpecialZoomLevel.PageFit}
             initialPage={getLastReadingPosition() - 1}
