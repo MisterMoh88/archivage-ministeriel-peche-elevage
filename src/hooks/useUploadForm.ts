@@ -52,6 +52,7 @@ export const useUploadForm = () => {
     register("budgetYear");
     register("budgetProgram");
     register("marketType");
+    register("confidentialityLevel", { required: "Le niveau de confidentialité est requis" });
   }, [register]);
 
   useEffect(() => {
@@ -78,6 +79,7 @@ export const useUploadForm = () => {
       documentDate: formValues.documentDate,
       categoryId: formValues.categoryId,
       documentType: formValues.documentType,
+      confidentialityLevel: formValues.confidentialityLevel,
     };
 
     const allFilled = Object.values(requiredFields).every(val => val?.trim() !== "");
@@ -126,6 +128,7 @@ export const useUploadForm = () => {
           budgetYear: "",
           budgetProgram: "",
           marketType: "",
+          confidentialityLevel: "",
         });
         setSelectedFiles([]);
         setFileErrors([]);

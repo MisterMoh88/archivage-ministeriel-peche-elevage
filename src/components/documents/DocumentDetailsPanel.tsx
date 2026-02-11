@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Hash, Calendar, FileType, Building } from "lucide-react";
+import { Hash, Calendar, FileType, Building, Shield } from "lucide-react";
 import { Document } from "@/types/document";
 import { formatDate, formatFileSize } from "@/utils/documentUtils";
 
@@ -43,6 +43,21 @@ export const DocumentDetailsPanel = ({ document }: DocumentDetailsPanelProps) =>
               <Badge className="ml-2">{document.document_categories.name}</Badge>
             </div>
           )}
+          
+          <div className="flex items-center text-sm">
+            <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span className="font-medium">Confidentialité:</span>
+            <Badge variant={
+              document.confidentiality_level === 'C3' ? 'destructive' :
+              document.confidentiality_level === 'C2' ? 'default' :
+              document.confidentiality_level === 'C1' ? 'secondary' : 'outline'
+            } className="ml-2">
+              {document.confidentiality_level === 'C0' ? 'C0 – Public' :
+               document.confidentiality_level === 'C1' ? 'C1 – Interne' :
+               document.confidentiality_level === 'C2' ? 'C2 – Confidentiel' :
+               'C3 – Très Confidentiel'}
+            </Badge>
+          </div>
           
           {document.issuing_department && (
             <div className="flex items-center text-sm">
