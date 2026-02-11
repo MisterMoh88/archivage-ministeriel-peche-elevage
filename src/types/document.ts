@@ -18,6 +18,7 @@ export interface Document {
   budget_year?: string;
   budget_program?: string;
   market_type?: "DC" | "DRPR" | "DRPO" | "AAO";
+  confidentiality_level: "C0" | "C1" | "C2" | "C3";
   upload_date: string;
   uploaded_by: string;
   last_modified?: string;

@@ -34,6 +34,8 @@ export const CategoryTypeFields = ({ categories, setValue, watch, documentTypes,
     return documentTypes[selectedCategoryObj.name as keyof typeof documentTypes] || [];
   };
 
+  const selectedConfidentiality = watch("confidentialityLevel");
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
@@ -74,6 +76,27 @@ export const CategoryTypeFields = ({ categories, setValue, watch, documentTypes,
           </SelectContent>
         </Select>
         {errors.documentType && (
+          <p className="text-sm text-destructive">Ce champ est requis</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="confidentialityLevel">Niveau de confidentialité *</Label>
+        <Select 
+          onValueChange={(value) => setValue("confidentialityLevel", value)} 
+          value={selectedConfidentiality}
+        >
+          <SelectTrigger id="confidentialityLevel" className={errors.confidentialityLevel ? "border-destructive" : ""}>
+            <SelectValue placeholder="Sélectionner un niveau" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="C0">C0 – Public</SelectItem>
+            <SelectItem value="C1">C1 – Interne</SelectItem>
+            <SelectItem value="C2">C2 – Confidentiel</SelectItem>
+            <SelectItem value="C3">C3 – Très Confidentiel</SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.confidentialityLevel && (
           <p className="text-sm text-destructive">Ce champ est requis</p>
         )}
       </div>

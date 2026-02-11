@@ -41,6 +41,44 @@ export type Database = {
         }
         Relationships: []
       }
+      document_access: {
+        Row: {
+          can_download: boolean
+          can_view: boolean
+          document_id: string
+          granted_at: string
+          granted_by: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          can_download?: boolean
+          can_view?: boolean
+          document_id: string
+          granted_at?: string
+          granted_by: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          can_download?: boolean
+          can_view?: boolean
+          document_id?: string
+          granted_at?: string
+          granted_by?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_access_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_categories: {
         Row: {
           created_at: string
@@ -96,6 +134,7 @@ export type Database = {
           budget_program: string | null
           budget_year: string | null
           category_id: string
+          confidentiality_level: Database["public"]["Enums"]["confidentiality_level"]
           description: string | null
           document_date: string
           document_type: string
@@ -118,6 +157,7 @@ export type Database = {
           budget_program?: string | null
           budget_year?: string | null
           category_id: string
+          confidentiality_level?: Database["public"]["Enums"]["confidentiality_level"]
           description?: string | null
           document_date: string
           document_type: string
@@ -140,6 +180,7 @@ export type Database = {
           budget_program?: string | null
           budget_year?: string | null
           category_id?: string
+          confidentiality_level?: Database["public"]["Enums"]["confidentiality_level"]
           description?: string | null
           document_date?: string
           document_type?: string
@@ -238,18 +279,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_by_confidentiality: {
+        Args: {
+          doc_confidentiality: Database["public"]["Enums"]["confidentiality_level"]
+          doc_department: string
+        }
+        Returns: boolean
+      }
       can_access_document: {
         Args: { doc_department: string }
         Returns: boolean
       }
       can_modify_documents: { Args: never; Returns: boolean }
       create_admin_user: { Args: never; Returns: undefined }
+      has_nominal_access: { Args: { doc_id: string }; Returns: boolean }
       user_has_role: {
         Args: { required_role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
       }
     }
     Enums: {
+      confidentiality_level: "C0" | "C1" | "C2" | "C3"
       document_status: "actif" | "archivé"
       market_type: "DC" | "DRPR" | "DRPO" | "AAO"
       user_role: "admin" | "archiviste" | "utilisateur" | "admin_local"
@@ -380,6 +430,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      confidentiality_level: ["C0", "C1", "C2", "C3"],
       document_status: ["actif", "archivé"],
       market_type: ["DC", "DRPR", "DRPO", "AAO"],
       user_role: ["admin", "archiviste", "utilisateur", "admin_local"],

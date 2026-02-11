@@ -11,11 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Download, MoreVertical, FileText, FilePen, Trash2 } from "lucide-react";
+import { Eye, Download, MoreVertical, FileText, FilePen, Trash2, Shield } from "lucide-react";
 import { formatDate, formatFileSize, getFileIcon, handleDownload, handlePreview, logDocumentView } from "@/utils/documentUtils";
 import { DocumentViewer } from "./DocumentViewer";
 import { DocumentEditForm } from "./DocumentEditForm";
 import { DocumentDeleteConfirm } from "./DocumentDeleteConfirm";
+import { DocumentAccessManager } from "./DocumentAccessManager";
 
 interface DocumentTableRowProps {
   document: Document;
@@ -27,7 +28,7 @@ export const DocumentTableRow = ({ document, categories, onDocumentChange }: Doc
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-
+  const [isAccessOpen, setIsAccessOpen] = useState(false);
   const openViewer = async () => {
     setIsViewerOpen(true);
     // Log document view in history
@@ -49,6 +50,15 @@ export const DocumentTableRow = ({ document, categories, onDocumentChange }: Doc
         </TableCell>
         <TableCell>{formatDate(document.document_date)}</TableCell>
         <TableCell>{document.reference_number}</TableCell>
+        <TableCell>
+          <Badge variant={
+            document.confidentiality_level === 'C3' ? 'destructive' :
+            document.confidentiality_level === 'C2' ? 'default' :
+            document.confidentiality_level === 'C1' ? 'secondary' : 'outline'
+          }>
+            {document.confidentiality_level || 'C1'}
+          </Badge>
+        </TableCell>
         <TableCell>
           <div className="flex items-center gap-1">
             {getFileIcon(document.file_type)}
@@ -90,6 +100,11 @@ export const DocumentTableRow = ({ document, categories, onDocumentChange }: Doc
                   Modifier
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsAccessOpen(true)}>
+                  <Shield className="h-4 w-4 mr-2" />
+                  Gérer les accès
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={() => setIsDeleteOpen(true)}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   Supprimer
@@ -123,6 +138,14 @@ export const DocumentTableRow = ({ document, categories, onDocumentChange }: Doc
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
         onSuccess={onDocumentChange}
+      />
+
+      {/* Document access manager */}
+      <DocumentAccessManager
+        documentId={document.id}
+        documentTitle={document.title}
+        isOpen={isAccessOpen}
+        onClose={() => setIsAccessOpen(false)}
       />
     </>
   );

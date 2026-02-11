@@ -112,6 +112,24 @@ export const DocumentFormFields = ({ formData, categories, handleChange, handleS
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="confidentiality_level">Niveau de confidentialité *</Label>
+          <Select 
+            value={formData.confidentiality_level || "C1"} 
+            onValueChange={(value) => handleSelectChange("confidentiality_level", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionnez un niveau" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="C0">C0 – Public</SelectItem>
+              <SelectItem value="C1">C1 – Interne</SelectItem>
+              <SelectItem value="C2">C2 – Confidentiel</SelectItem>
+              <SelectItem value="C3">C3 – Très Confidentiel</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="market_type">Type de marché</Label>
           <Select 
             value={formData.market_type || ""} 

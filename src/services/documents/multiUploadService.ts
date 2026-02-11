@@ -15,6 +15,7 @@ interface MultiUploadDocumentProps {
   budgetYear?: string;
   budgetProgram?: string;
   marketType?: "DC" | "DRPR" | "DRPO" | "AAO";
+  confidentialityLevel: "C0" | "C1" | "C2" | "C3";
 }
 
 interface UploadResult {
@@ -119,6 +120,7 @@ export const uploadMultipleDocuments = async (
             budget_year: documentData.budgetYear,
             budget_program: documentData.budgetProgram,
             market_type: documentData.marketType,
+            confidentiality_level: documentData.confidentialityLevel,
             uploaded_by: user.id
           })
           .select()
