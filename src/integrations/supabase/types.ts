@@ -131,6 +131,13 @@ export type Database = {
       }
       documents: {
         Row: {
+          archive_box: string | null
+          archive_cabinet: string | null
+          archive_code: string | null
+          archive_folder: string | null
+          archive_room: string | null
+          archive_shelf: string | null
+          archive_zone: string | null
           budget_program: string | null
           budget_year: string | null
           category_id: string
@@ -154,6 +161,13 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
+          archive_box?: string | null
+          archive_cabinet?: string | null
+          archive_code?: string | null
+          archive_folder?: string | null
+          archive_room?: string | null
+          archive_shelf?: string | null
+          archive_zone?: string | null
           budget_program?: string | null
           budget_year?: string | null
           category_id: string
@@ -177,6 +191,13 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
+          archive_box?: string | null
+          archive_cabinet?: string | null
+          archive_code?: string | null
+          archive_folder?: string | null
+          archive_room?: string | null
+          archive_shelf?: string | null
+          archive_zone?: string | null
           budget_program?: string | null
           budget_year?: string | null
           category_id?: string
@@ -292,6 +313,10 @@ export type Database = {
       }
       can_modify_documents: { Args: never; Returns: boolean }
       create_admin_user: { Args: never; Returns: undefined }
+      generate_archive_code: {
+        Args: { dept: string; yr: string }
+        Returns: string
+      }
       has_nominal_access: { Args: { doc_id: string }; Returns: boolean }
       user_has_role: {
         Args: { required_role: Database["public"]["Enums"]["user_role"] }
