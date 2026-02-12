@@ -16,6 +16,12 @@ interface MultiUploadDocumentProps {
   budgetProgram?: string;
   marketType?: "DC" | "DRPR" | "DRPO" | "AAO";
   confidentialityLevel: "C0" | "C1" | "C2" | "C3";
+  archiveZone?: string;
+  archiveRoom?: string;
+  archiveCabinet?: string;
+  archiveShelf?: string;
+  archiveBox?: string;
+  archiveFolder?: string;
 }
 
 interface UploadResult {
@@ -103,6 +109,18 @@ export const uploadMultipleDocuments = async (
           ? `${documentData.title} - ${i + 1}`
           : documentData.title;
 
+        // Generate archive code if location fields are provided
+        const hasArchiveLocation = documentData.archiveZone && documentData.archiveRoom && documentData.archiveCabinet;
+        let archiveCode: string | undefined;
+
+        if (hasArchiveLocation) {
+          const { data: codeData, error: codeError } = await supabase.rpc(
+            "generate_archive_code",
+            { dept: documentData.issuingDepartment || "GENERAL", yr: documentData.budgetYear || new Date().getFullYear().toString() }
+          );
+          if (!codeError) archiveCode = codeData;
+        }
+
         const { data: docData, error: insertError } = await supabase
           .from('documents')
           .insert({
@@ -121,7 +139,17 @@ export const uploadMultipleDocuments = async (
             budget_program: documentData.budgetProgram,
             market_type: documentData.marketType,
             confidentiality_level: documentData.confidentialityLevel,
-            uploaded_by: user.id
+            uploaded_by: user.id,
+            ...(hasArchiveLocation ? {
+              archive_zone: documentData.archiveZone,
+              archive_room: documentData.archiveRoom,
+              archive_cabinet: documentData.archiveCabinet,
+              archive_shelf: documentData.archiveShelf,
+              archive_box: documentData.archiveBox,
+              archive_folder: documentData.archiveFolder,
+              archive_code: archiveCode,
+              status: "archivé" as const,
+            } : {}),
           })
           .select()
           .single();
