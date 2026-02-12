@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Hash, Calendar, FileType, Building, Shield } from "lucide-react";
+import { Hash, Calendar, FileType, Building, Shield, Archive, MapPin } from "lucide-react";
 import { Document } from "@/types/document";
 import { formatDate, formatFileSize } from "@/utils/documentUtils";
 
@@ -81,6 +81,27 @@ export const DocumentDetailsPanel = ({ document }: DocumentDetailsPanelProps) =>
               )}
               {document.market_type && (
                 <p><span className="font-medium">Type de marché:</span> {document.market_type}</p>
+              )}
+            </div>
+          )}
+
+          {document.archive_code && (
+            <div className="bg-primary/10 p-3 rounded-md space-y-1">
+              <div className="flex items-center gap-1 text-sm font-medium">
+                <Archive className="h-4 w-4" />
+                Code d'archivage
+              </div>
+              <p className="text-sm font-mono">{document.archive_code}</p>
+              {document.archive_zone && (
+                <div className="text-xs space-y-0.5 mt-2">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    <span>{document.archive_zone} › {document.archive_room} › {document.archive_cabinet}</span>
+                  </div>
+                  {document.archive_shelf && <p>Rayon: {document.archive_shelf}</p>}
+                  {document.archive_box && <p>Boîte: {document.archive_box}</p>}
+                  {document.archive_folder && <p>Dossier: {document.archive_folder}</p>}
+                </div>
               )}
             </div>
           )}

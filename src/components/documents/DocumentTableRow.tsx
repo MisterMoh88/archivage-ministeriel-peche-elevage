@@ -11,12 +11,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Download, MoreVertical, FileText, FilePen, Trash2, Shield } from "lucide-react";
+import { Eye, Download, MoreVertical, FileText, FilePen, Trash2, Shield, Archive } from "lucide-react";
 import { formatDate, formatFileSize, getFileIcon, handleDownload, handlePreview, logDocumentView } from "@/utils/documentUtils";
 import { DocumentViewer } from "./DocumentViewer";
 import { DocumentEditForm } from "./DocumentEditForm";
 import { DocumentDeleteConfirm } from "./DocumentDeleteConfirm";
 import { DocumentAccessManager } from "./DocumentAccessManager";
+import { ArchiveLocationForm } from "./ArchiveLocationForm";
 
 interface DocumentTableRowProps {
   document: Document;
@@ -29,6 +30,7 @@ export const DocumentTableRow = ({ document, categories, onDocumentChange }: Doc
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isAccessOpen, setIsAccessOpen] = useState(false);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const openViewer = async () => {
     setIsViewerOpen(true);
     // Log document view in history
@@ -58,6 +60,13 @@ export const DocumentTableRow = ({ document, categories, onDocumentChange }: Doc
           }>
             {document.confidentiality_level || 'C1'}
           </Badge>
+        </TableCell>
+        <TableCell>
+          {document.archive_code ? (
+            <Badge variant="outline" className="font-mono text-xs">{document.archive_code}</Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          )}
         </TableCell>
         <TableCell>
           <div className="flex items-center gap-1">
@@ -104,6 +113,10 @@ export const DocumentTableRow = ({ document, categories, onDocumentChange }: Doc
                   <Shield className="h-4 w-4 mr-2" />
                   Gérer les accès
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsArchiveOpen(true)}>
+                  <Archive className="h-4 w-4 mr-2" />
+                  {document.archive_code ? "Modifier localisation" : "Archiver le document"}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={() => setIsDeleteOpen(true)}>
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -146,6 +159,18 @@ export const DocumentTableRow = ({ document, categories, onDocumentChange }: Doc
         documentTitle={document.title}
         isOpen={isAccessOpen}
         onClose={() => setIsAccessOpen(false)}
+      />
+
+      {/* Archive location form */}
+      <ArchiveLocationForm
+        documentId={document.id}
+        documentTitle={document.title}
+        issuingDepartment={document.issuing_department}
+        budgetYear={document.budget_year}
+        existingArchiveCode={document.archive_code}
+        isOpen={isArchiveOpen}
+        onClose={() => setIsArchiveOpen(false)}
+        onSuccess={onDocumentChange}
       />
     </>
   );

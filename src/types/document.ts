@@ -24,6 +24,13 @@ export interface Document {
   last_modified?: string;
   modified_by?: string;
   status?: "actif" | "archivé";
+  archive_zone?: string;
+  archive_room?: string;
+  archive_cabinet?: string;
+  archive_shelf?: string;
+  archive_box?: string;
+  archive_folder?: string;
+  archive_code?: string;
 }
 
 export interface DocumentHistory {

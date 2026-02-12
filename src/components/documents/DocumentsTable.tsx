@@ -77,6 +77,7 @@ export const DocumentsTable = ({
             </div>
           </TableHead>
           <TableHead>Confidentialité</TableHead>
+          <TableHead>Code archive</TableHead>
           <TableHead>Format</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -84,7 +85,7 @@ export const DocumentsTable = ({
       <TableBody>
         {isLoading ? (
           <TableRow>
-            <TableCell colSpan={9} className="text-center py-10">
+            <TableCell colSpan={10} className="text-center py-10">
               <div className="flex justify-center items-center">
                 <Loader2 className="h-8 w-8 animate-spin text-ministry-blue" />
                 <span className="ml-2">Chargement des documents...</span>
@@ -93,7 +94,7 @@ export const DocumentsTable = ({
           </TableRow>
         ) : documents.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={9} className="text-center py-10">
+            <TableCell colSpan={10} className="text-center py-10">
               <p className="text-muted-foreground">Aucun document trouvé</p>
             </TableCell>
           </TableRow>
