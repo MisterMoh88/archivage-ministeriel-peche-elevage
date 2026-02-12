@@ -1,6 +1,7 @@
 
 import React from "react";
 import { DocumentInfoCard } from "@/components/upload/DocumentInfoCard";
+import { ArchiveLocationFields } from "@/components/upload/ArchiveLocationFields";
 import { FileUploadCard } from "@/components/upload/FileUploadCard";
 import { useUploadForm } from "@/hooks/useUploadForm";
 
@@ -37,6 +38,8 @@ export default function Upload() {
             watch={watch}
             isPublicMarket={isPublicMarket}
           />
+
+          <ArchiveLocationFields control={control} />
 
           <FileUploadCard
             selectedFiles={selectedFiles}

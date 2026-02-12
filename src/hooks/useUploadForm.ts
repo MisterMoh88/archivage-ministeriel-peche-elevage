@@ -53,6 +53,12 @@ export const useUploadForm = () => {
     register("budgetProgram");
     register("marketType");
     register("confidentialityLevel", { required: "Le niveau de confidentialité est requis" });
+    register("archiveZone");
+    register("archiveRoom");
+    register("archiveCabinet");
+    register("archiveShelf");
+    register("archiveBox");
+    register("archiveFolder");
   }, [register]);
 
   useEffect(() => {
@@ -129,6 +135,12 @@ export const useUploadForm = () => {
           budgetProgram: "",
           marketType: "",
           confidentialityLevel: "",
+          archiveZone: "",
+          archiveRoom: "",
+          archiveCabinet: "",
+          archiveShelf: "",
+          archiveBox: "",
+          archiveFolder: "",
         });
         setSelectedFiles([]);
         setFileErrors([]);
