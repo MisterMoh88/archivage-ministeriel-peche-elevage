@@ -3,7 +3,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Document } from "@/types/document";
 import { formatDate, formatFileSize } from "@/utils/documentUtils";
-import { Info, Hash, Calendar, FileType, Building } from "lucide-react";
+import { Info, Hash, Calendar, FileType, Building, Archive, MapPin } from "lucide-react";
 
 interface DocumentDetailsProps {
   document: Document;
@@ -92,6 +92,54 @@ export const DocumentDetails = ({ document }: DocumentDetailsProps) => {
         <div className="space-y-2 mt-4">
           <h3 className="font-medium">Description</h3>
           <p className="text-sm text-muted-foreground">{document.description}</p>
+        </div>
+      )}
+
+      {(document.archive_code || document.archive_zone) && (
+        <div className="space-y-3 mt-4">
+          <h3 className="font-medium flex items-center gap-2">
+            <Archive className="h-4 w-4" />
+            Localisation physique
+          </h3>
+          {document.archive_code && (
+            <div className="flex items-center">
+              <Hash className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span className="text-sm font-medium">Code d'archivage:</span>
+              <span className="text-sm ml-2">
+                <Badge variant="outline" className="font-mono">{document.archive_code}</Badge>
+              </span>
+            </div>
+          )}
+          {document.archive_zone && (
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span className="text-sm font-medium">Emplacement:</span>
+              <span className="text-sm ml-2">
+                {document.archive_zone} › {document.archive_room} › {document.archive_cabinet}
+              </span>
+            </div>
+          )}
+          {document.archive_shelf && (
+            <div className="flex items-center">
+              <Info className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span className="text-sm font-medium">Rayon:</span>
+              <span className="text-sm ml-2">{document.archive_shelf}</span>
+            </div>
+          )}
+          {document.archive_box && (
+            <div className="flex items-center">
+              <Info className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span className="text-sm font-medium">Boîte:</span>
+              <span className="text-sm ml-2">{document.archive_box}</span>
+            </div>
+          )}
+          {document.archive_folder && (
+            <div className="flex items-center">
+              <Info className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span className="text-sm font-medium">Dossier:</span>
+              <span className="text-sm ml-2">{document.archive_folder}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

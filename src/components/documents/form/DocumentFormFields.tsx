@@ -4,7 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Document } from "@/types/document";
+import { MapPin } from "lucide-react";
 
 interface DocumentFormFieldsProps {
   formData: Partial<Document>;
@@ -158,6 +160,46 @@ export const DocumentFormFields = ({ formData, categories, handleChange, handleS
           className="h-20"
         />
       </div>
+
+      <Card className="border-dashed border-muted-foreground/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MapPin className="h-4 w-4" />
+            Localisation physique
+          </CardTitle>
+          <CardDescription>
+            Optionnel — Renseignez ces champs pour archiver définitivement le document.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="archive_zone">Zone / Site</Label>
+              <Input id="archive_zone" name="archive_zone" value={formData.archive_zone || ""} onChange={handleChange} placeholder="Ex : Zone A" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="archive_room">Salle d'archives</Label>
+              <Input id="archive_room" name="archive_room" value={formData.archive_room || ""} onChange={handleChange} placeholder="Ex : Salle 01" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="archive_cabinet">Armoire</Label>
+              <Input id="archive_cabinet" name="archive_cabinet" value={formData.archive_cabinet || ""} onChange={handleChange} placeholder="Ex : ARM-03" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="archive_shelf">Rayon / Étagère</Label>
+              <Input id="archive_shelf" name="archive_shelf" value={formData.archive_shelf || ""} onChange={handleChange} placeholder="Ex : Rayon 2" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="archive_box">Boîte</Label>
+              <Input id="archive_box" name="archive_box" value={formData.archive_box || ""} onChange={handleChange} placeholder="Ex : BT-015" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="archive_folder">Dossier</Label>
+              <Input id="archive_folder" name="archive_folder" value={formData.archive_folder || ""} onChange={handleChange} placeholder="Ex : DOS-007" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
