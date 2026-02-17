@@ -52,7 +52,7 @@ export interface DocumentHistory {
 export interface UserProfile {
   id: string;
   full_name: string | null;
-  role: 'admin' | 'admin_local' | 'archiviste' | 'utilisateur';
+  role: 'admin' | 'admin_local' | 'archiviste' | 'auditeur' | 'utilisateur';
   department: string | null;
   status: string;
 }

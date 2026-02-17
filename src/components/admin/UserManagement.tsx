@@ -62,7 +62,7 @@ interface Department {
 }
 
 interface UserFormValues {
-  email: string;
+  matricule: string;
   full_name: string;
   role: UserRole;
   password?: string;
@@ -70,9 +70,9 @@ interface UserFormValues {
 }
 
 const UserFormSchema = z.object({
-  email: z.string().email("Adresse e-mail invalide"),
+  matricule: z.string().min(2, "Le matricule doit contenir au moins 2 caractères"),
   full_name: z.string().min(3, "Le nom complet doit contenir au moins 3 caractères"),
-  role: z.enum(["admin", "admin_local", "archiviste", "utilisateur"] as const),
+  role: z.enum(["admin", "admin_local", "archiviste", "auditeur", "utilisateur"] as const),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères").optional(),
   department: z.string().optional(),
 });
@@ -152,7 +152,7 @@ export function UserManagement() {
   const form = useForm<UserFormValues>({
     resolver: zodResolver(UserFormSchema),
     defaultValues: {
-      email: "",
+      matricule: "",
       full_name: "",
       role: "utilisateur",
       department: "none",
@@ -161,8 +161,9 @@ export function UserManagement() {
 
   const createUserMutation = useMutation({
     mutationFn: async (values: UserFormValues) => {
+      const email = `${values.matricule}@archive.local`;
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: values.email,
+        email,
         password: values.password,
         email_confirm: true,
         user_metadata: {
@@ -293,8 +294,10 @@ export function UserManagement() {
   const handleOpenDialog = (user?: User) => {
     if (user) {
       setEditingUser(user);
+      // Extract matricule from email (remove @archive.local)
+      const matricule = user.email?.replace('@archive.local', '') || user.email || '';
       form.reset({
-        email: user.email || "",
+        matricule,
         full_name: user.full_name || "",
         role: user.role,
         department: user.department || "none",
@@ -303,7 +306,7 @@ export function UserManagement() {
     } else {
       setEditingUser(null);
       form.reset({
-        email: "",
+        matricule: "",
         full_name: "",
         role: "utilisateur",
         department: "none",
@@ -342,6 +345,8 @@ export function UserManagement() {
         return "default";
       case "admin_local":
         return "secondary";
+      case "auditeur":
+        return "secondary";
       case "archiviste":
         return "outline";
       default:
@@ -352,11 +357,13 @@ export function UserManagement() {
   const getRoleDisplayName = (role: UserRole) => {
     switch (role) {
       case "admin":
-        return "Administrateur";
+        return "Super Administrateur";
       case "admin_local":
-        return "Admin Local";
+        return "Admin Département";
       case "archiviste":
         return "Archiviste";
+      case "auditeur":
+        return "Auditeur";
       case "utilisateur":
         return "Utilisateur";
       default:
@@ -384,7 +391,7 @@ export function UserManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nom complet</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Matricule</TableHead>
                 <TableHead>Rôle</TableHead>
                 <TableHead>Département</TableHead>
                 <TableHead>Statut</TableHead>
@@ -402,7 +409,7 @@ export function UserManagement() {
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.full_name || "Non renseigné"}</TableCell>
-                    <TableCell>{user.email || "Non renseigné"}</TableCell>
+                    <TableCell>{user.email?.replace('@archive.local', '') || user.email || "Non renseigné"}</TableCell>
                     <TableCell>
                       <Badge variant={getRoleBadgeVariant(user.role as UserRole)}>
                         {getRoleDisplayName(user.role as UserRole)}
@@ -490,14 +497,14 @@ export function UserManagement() {
 
               <FormField
                 control={form.control}
-                name="email"
+                name="matricule"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Adresse e-mail</FormLabel>
+                    <FormLabel>Matricule</FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
-                        placeholder="exemple@domaine.com" 
+                        placeholder="Entrez le matricule" 
                         disabled={!!editingUser} 
                       />
                     </FormControl>
@@ -540,9 +547,10 @@ export function UserManagement() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="admin">Administrateur</SelectItem>
-                        <SelectItem value="admin_local">Administrateur Local</SelectItem>
+                        <SelectItem value="admin">Super Administrateur</SelectItem>
+                        <SelectItem value="admin_local">Admin Département</SelectItem>
                         <SelectItem value="archiviste">Archiviste</SelectItem>
+                        <SelectItem value="auditeur">Auditeur</SelectItem>
                         <SelectItem value="utilisateur">Utilisateur</SelectItem>
                       </SelectContent>
                     </Select>

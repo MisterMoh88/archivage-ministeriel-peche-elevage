@@ -74,10 +74,16 @@ export default function Users() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setRoleFilter('admin')}>
-                    Administrateurs
+                    Super Administrateurs
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRoleFilter('admin_local')}>
+                    Admin Département
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setRoleFilter('archiviste')}>
                     Archivistes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRoleFilter('auditeur')}>
+                    Auditeurs
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setRoleFilter('utilisateur')}>
                     Utilisateurs
