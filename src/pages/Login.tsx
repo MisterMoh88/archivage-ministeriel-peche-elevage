@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [matricule, setMatricule] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const {
@@ -30,12 +30,14 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
-    if (!email || !password) {
+    if (!matricule || !password) {
       setErrorMessage("Veuillez remplir tous les champs");
       return;
     }
     try {
       setIsSubmitting(true);
+      // Convert matricule to email format for Supabase Auth
+      const email = matricule.includes('@') ? matricule : `${matricule}@archive.local`;
       await signIn(email, password);
       // On success, the AuthContext will handle redirection
     } catch (error: any) {
@@ -43,7 +45,7 @@ export default function Login() {
 
       // More specific error messages based on the error type
       if (error.message?.includes("Invalid login credentials")) {
-        setErrorMessage("Email ou mot de passe incorrect");
+        setErrorMessage("Matricule ou mot de passe incorrect");
       } else if (error.message?.includes("Database error")) {
         setErrorMessage("Erreur temporaire du serveur. Veuillez réessayer dans quelques instants.");
         toast.error("Une erreur de connexion à la base de données est survenue. Notre équipe technique a été informée.");
@@ -82,8 +84,8 @@ export default function Login() {
             
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="nom.prenom@elevage-peche.gouv.ml" value={email} onChange={e => setEmail(e.target.value)} disabled={isSubmitting || isLoading} required />
+                <Label htmlFor="matricule">Matricule</Label>
+                <Input id="matricule" type="text" placeholder="Entrez votre matricule" value={matricule} onChange={e => setMatricule(e.target.value)} disabled={isSubmitting || isLoading} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe</Label>

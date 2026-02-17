@@ -23,7 +23,7 @@ interface UserData {
   full_name: string | null;
   department: string | null;
   phone: string | null;
-  role: "admin" | "admin_local" | "archiviste" | "utilisateur";
+  role: "admin" | "admin_local" | "archiviste" | "auditeur" | "utilisateur";
   status: string | null;
   last_active: string | null;
 }
@@ -37,11 +37,13 @@ export function UserTable({ users, isLoading }: UserTableProps) {
   const getRoleDisplayName = (role: UserData['role']) => {
     switch (role) {
       case "admin":
-        return "Administrateur";
+        return "Super Administrateur";
       case "admin_local":
-        return "Admin Local";
+        return "Admin Département";
       case "archiviste":
         return "Archiviste";
+      case "auditeur":
+        return "Auditeur";
       case "utilisateur":
         return "Utilisateur";
       default:
