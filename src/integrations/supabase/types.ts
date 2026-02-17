@@ -327,7 +327,12 @@ export type Database = {
       confidentiality_level: "C0" | "C1" | "C2" | "C3"
       document_status: "actif" | "archivé"
       market_type: "DC" | "DRPR" | "DRPO" | "AAO"
-      user_role: "admin" | "archiviste" | "utilisateur" | "admin_local"
+      user_role:
+        | "admin"
+        | "archiviste"
+        | "utilisateur"
+        | "admin_local"
+        | "auditeur"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -458,7 +463,13 @@ export const Constants = {
       confidentiality_level: ["C0", "C1", "C2", "C3"],
       document_status: ["actif", "archivé"],
       market_type: ["DC", "DRPR", "DRPO", "AAO"],
-      user_role: ["admin", "archiviste", "utilisateur", "admin_local"],
+      user_role: [
+        "admin",
+        "archiviste",
+        "utilisateur",
+        "admin_local",
+        "auditeur",
+      ],
     },
   },
 } as const
