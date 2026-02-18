@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -108,17 +108,24 @@ Deno.serve(async (req) => {
 
     if (action === "list") {
       try {
-        const { data, error } = await adminClient.auth.admin.listUsers();
-        if (error) {
-          console.error("listUsers error:", JSON.stringify(error));
-          throw error;
+        const res = await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=500`, {
+          headers: {
+            "Authorization": `Bearer ${serviceRoleKey}`,
+            "apikey": serviceRoleKey,
+          },
+        });
+        if (!res.ok) {
+          const errBody = await res.text();
+          console.error("listUsers REST error:", res.status, errBody);
+          throw new Error(`Auth API error: ${res.status}`);
         }
-        return new Response(JSON.stringify({ users: data.users }), {
+        const data = await res.json();
+        return new Response(JSON.stringify({ users: data.users || data }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e) {
         console.error("listUsers catch:", e?.message || e);
-        return new Response(JSON.stringify({ error: "Database error finding users", details: e?.message }), {
+        return new Response(JSON.stringify({ error: e?.message || "Error listing users" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
