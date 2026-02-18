@@ -97,34 +97,29 @@ export function UserManagement() {
         throw error;
       }
 
-      const enrichedProfiles: User[] = [];
-      
       if (profiles && profiles.length > 0) {
-        const { data: authResponse, error: authError } = await supabase.auth.admin.listUsers();
-        
-        if (authError) {
-          console.error("Error fetching auth users:", authError);
-          return profiles.map(profile => ({
-            ...profile,
-            email: undefined
-          })) as User[];
-        }
-
-        const authUsers = authResponse?.users || [];
-        
-        const userEmailMap = new Map<string, string>();
-        authUsers.forEach(user => {
-          userEmailMap.set(user.id, user.email || "");
-        });
-
-        profiles.forEach(profile => {
-          enrichedProfiles.push({
-            ...profile,
-            email: userEmailMap.get(profile.id) || undefined
+        try {
+          const { data: session } = await supabase.auth.getSession();
+          const response = await supabase.functions.invoke("manage-user", {
+            body: { action: "list" },
           });
-        });
-        
-        return enrichedProfiles;
+
+          if (response.data?.users) {
+            const authUsers = response.data.users;
+            const userEmailMap = new Map<string, string>();
+            authUsers.forEach((user: any) => {
+              userEmailMap.set(user.id, user.email || "");
+            });
+
+            return profiles.map(profile => ({
+              ...profile,
+              email: userEmailMap.get(profile.id) || undefined
+            })) as User[];
+          }
+        } catch (err) {
+          console.error("Error fetching auth users:", err);
+        }
+        return profiles.map(profile => ({ ...profile, email: undefined })) as User[];
       }
 
       return profiles as User[];
@@ -162,36 +157,21 @@ export function UserManagement() {
   const createUserMutation = useMutation({
     mutationFn: async (values: UserFormValues) => {
       const email = `${values.matricule}@archive.local`;
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password: values.password,
-        email_confirm: true,
-        user_metadata: {
+      const response = await supabase.functions.invoke("manage-user", {
+        body: {
+          action: "create",
+          email,
+          password: values.password,
           full_name: values.full_name,
+          role: values.role,
+          department: values.department,
         },
       });
 
-      if (authError) {
-        throw authError;
-      }
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
 
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({
-            full_name: values.full_name,
-            role: values.role,
-            department: values.department === "none" ? null : values.department,
-            status: "Actif",
-          })
-          .eq("id", authData.user.id);
-
-        if (profileError) {
-          throw profileError;
-        }
-      }
-
-      return authData;
+      return response.data;
     },
     onSuccess: () => {
       toast.success("Utilisateur créé avec succès");
@@ -208,31 +188,21 @@ export function UserManagement() {
     mutationFn: async (values: UserFormValues) => {
       if (!editingUser) return;
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
+      const response = await supabase.functions.invoke("manage-user", {
+        body: {
+          action: "update",
+          userId: editingUser.id,
           full_name: values.full_name,
           role: values.role,
-          department: values.department === "none" ? null : values.department,
-        })
-        .eq("id", editingUser.id);
+          department: values.department,
+          password: values.password || undefined,
+        },
+      });
 
-      if (profileError) {
-        throw profileError;
-      }
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
 
-      if (values.password) {
-        const { error: authError } = await supabase.auth.admin.updateUserById(
-          editingUser.id,
-          { password: values.password }
-        );
-
-        if (authError) {
-          throw authError;
-        }
-      }
-
-      return { success: true };
+      return response.data;
     },
     onSuccess: () => {
       toast.success("Utilisateur mis à jour avec succès");
@@ -272,12 +242,13 @@ export function UserManagement() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (error) {
-        throw error;
-      }
-      
+      const response = await supabase.functions.invoke("manage-user", {
+        body: { action: "delete", userId },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+
       return { success: true };
     },
     onSuccess: () => {
