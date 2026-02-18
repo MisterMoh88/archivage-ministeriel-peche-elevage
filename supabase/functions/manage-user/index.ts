@@ -13,7 +13,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const authHeader = req.headers.get("Authorization");
 
     if (!authHeader?.startsWith("Bearer ")) {
@@ -22,21 +21,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Create service role client for all admin operations
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
     // Verify the caller is authenticated
-    const anonClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
+    const { data: { user: caller }, error: authError } = await adminClient.auth.getUser(token);
+    if (authError || !caller) {
+      console.error("Auth error:", authError?.message);
       return new Response(JSON.stringify({ error: "Non authentifié" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const callerId = claimsData.claims.sub;
+    const callerId = caller.id;
 
-    // Check caller is admin using service role client
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    // Check caller is admin
     const { data: callerProfile } = await adminClient
       .from("profiles")
       .select("role")
