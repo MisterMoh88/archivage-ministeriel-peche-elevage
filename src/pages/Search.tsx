@@ -37,11 +37,10 @@ export default function Search() {
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [viewDocument, setViewDocument] = useState<Document | null>(null);
 
-  // Fetch documents
+  // Fetch documents - always loaded so search is instant
   const { data: documents = [], isLoading: documentsLoading } = useQuery({
     queryKey: ["search-documents"],
     queryFn: getDocuments,
-    enabled: searchPerformed,
   });
 
   // Fetch categories
