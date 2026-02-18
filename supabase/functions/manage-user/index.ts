@@ -22,7 +22,12 @@ Deno.serve(async (req) => {
     }
 
     // Create service role client for all admin operations
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     // Decode JWT to get caller identity (doesn't require active session)
     const token = authHeader.replace("Bearer ", "");
@@ -102,11 +107,21 @@ Deno.serve(async (req) => {
     }
 
     if (action === "list") {
-      const { data, error } = await adminClient.auth.admin.listUsers();
-      if (error) throw error;
-      return new Response(JSON.stringify({ users: data.users }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      try {
+        const { data, error } = await adminClient.auth.admin.listUsers();
+        if (error) {
+          console.error("listUsers error:", JSON.stringify(error));
+          throw error;
+        }
+        return new Response(JSON.stringify({ users: data.users }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        console.error("listUsers catch:", e?.message || e);
+        return new Response(JSON.stringify({ error: "Database error finding users", details: e?.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     return new Response(JSON.stringify({ error: "Action inconnue" }), {
