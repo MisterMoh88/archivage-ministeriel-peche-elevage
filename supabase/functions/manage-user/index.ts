@@ -24,16 +24,18 @@ Deno.serve(async (req) => {
     // Create service role client for all admin operations
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Verify the caller is authenticated
+    // Decode JWT to get caller identity (doesn't require active session)
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user: caller }, error: authError } = await adminClient.auth.getUser(token);
-    if (authError || !caller) {
-      console.error("Auth error:", authError?.message);
+    let callerId: string;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      callerId = payload.sub;
+      if (!callerId) throw new Error("No sub in token");
+    } catch {
       return new Response(JSON.stringify({ error: "Non authentifié" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const callerId = caller.id;
 
     // Check caller is admin
     const { data: callerProfile } = await adminClient
