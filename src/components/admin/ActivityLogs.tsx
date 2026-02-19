@@ -1,132 +1,94 @@
-
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, Download, Filter, Search, Activity } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-interface LogEntry {
-  id: string;
-  timestamp: string;
-  user: string;
-  action: string;
-  resource: string;
-  ip: string;
-  status: "success" | "warning" | "error";
-  details?: string;
-}
+import { Download, Search, Activity, Loader2 } from "lucide-react";
 
 export function ActivityLogs() {
-  const [date, setDate] = useState<Date>();
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Données d'exemple pour les journaux
-  const mockLogs: LogEntry[] = [
-    {
-      id: "1",
-      timestamp: "2025-06-15 15:30:25",
-      user: "Admin Système",
-      action: "LOGIN",
-      resource: "Système",
-      ip: "192.168.1.100",
-      status: "success",
-      details: "Connexion réussie"
-    },
-    {
-      id: "2",
-      timestamp: "2025-06-15 15:28:12",
-      user: "Marie Traoré",
-      action: "DOCUMENT_UPLOAD",
-      resource: "Document #1234",
-      ip: "192.168.1.101",
-      status: "success",
-      details: "Upload: rapport_mensuel.pdf"
-    },
-    {
-      id: "3",
-      timestamp: "2025-06-15 15:25:45",
-      user: "Jean Diallo",
-      action: "DOCUMENT_VIEW",
-      resource: "Document #1233",
-      ip: "192.168.1.102",
-      status: "success",
-      details: "Consultation document confidentiel"
-    },
-    {
-      id: "4",
-      timestamp: "2025-06-15 15:20:10",
-      user: "Utilisateur Inconnu",
-      action: "LOGIN_FAILED",
-      resource: "Système",
-      ip: "192.168.1.200",
-      status: "error",
-      details: "Tentative de connexion avec mot de passe incorrect"
-    },
-    {
-      id: "5",
-      timestamp: "2025-06-15 15:15:33",
-      user: "Admin Local",
-      action: "USER_CREATED",
-      resource: "Utilisateur #567",
-      ip: "192.168.1.103",
-      status: "success",
-      details: "Création compte: nouvel.utilisateur@example.com"
-    }
-  ];
+  const { data: logs = [], isLoading } = useQuery({
+    queryKey: ["activity-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_actions")
+        .select("id, action_type, document_id, performed_at, details, user_id, profiles(full_name)")
+        .order("performed_at", { ascending: false })
+        .limit(100);
 
-  const getStatusBadge = (status: LogEntry['status']) => {
-    switch (status) {
-      case "success":
-        return <Badge className="bg-green-100 text-green-800">Succès</Badge>;
-      case "warning":
-        return <Badge className="bg-yellow-100 text-yellow-800">Attention</Badge>;
-      case "error":
-        return <Badge className="bg-red-100 text-red-800">Erreur</Badge>;
-      default:
-        return <Badge variant="outline">Inconnu</Badge>;
-    }
-  };
+      if (error) throw error;
+
+      // Fetch document titles for entries with document_id
+      const docIds = [...new Set(data?.filter(d => d.document_id).map(d => d.document_id) || [])];
+      const docMap = new Map<string, string>();
+      
+      if (docIds.length > 0) {
+        const { data: docs } = await supabase
+          .from("documents")
+          .select("id, title")
+          .in("id", docIds);
+        docs?.forEach(d => docMap.set(d.id, d.title));
+      }
+
+      return (data || []).map(entry => ({
+        id: entry.id,
+        timestamp: entry.performed_at,
+        user: (entry.profiles as any)?.full_name || "Utilisateur inconnu",
+        action: entry.action_type,
+        resource: entry.document_id ? (docMap.get(entry.document_id) || entry.document_id) : "Système",
+        status: "success" as const,
+        details: typeof entry.details === 'object' && entry.details 
+          ? (entry.details as any).title || JSON.stringify(entry.details).substring(0, 100) 
+          : "",
+      }));
+    },
+  });
 
   const getActionLabel = (action: string) => {
     const actions: Record<string, string> = {
-      LOGIN: "Connexion",
-      LOGOUT: "Déconnexion", 
-      LOGIN_FAILED: "Échec connexion",
-      DOCUMENT_UPLOAD: "Upload document",
-      DOCUMENT_VIEW: "Consultation",
-      DOCUMENT_EDIT: "Modification",
-      DOCUMENT_DELETE: "Suppression",
-      USER_CREATED: "Création utilisateur",
-      USER_UPDATED: "Modification utilisateur",
-      USER_DELETED: "Suppression utilisateur",
-      SETTINGS_CHANGED: "Modification paramètres"
+      login: "Connexion",
+      logout: "Déconnexion",
+      upload: "Upload document",
+      view: "Consultation",
+      update: "Modification",
+      delete: "Suppression",
+      search: "Recherche",
+      download: "Téléchargement",
     };
     return actions[action] || action;
   };
 
-  const filteredLogs = mockLogs.filter(log => {
-    const matchesSearch = !searchQuery || 
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = !searchQuery ||
       log.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.resource.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.details?.toLowerCase().includes(searchQuery.toLowerCase());
-    
     const matchesAction = actionFilter === "all" || log.action === actionFilter;
-    
     return matchesSearch && matchesAction;
   });
 
   const exportLogs = () => {
-    // Logique d'export des journaux
-    alert("Export des journaux en cours...");
+    const csv = [
+      "Horodatage,Utilisateur,Action,Ressource,Détails",
+      ...filteredLogs.map(l =>
+        `"${format(new Date(l.timestamp), "dd/MM/yyyy HH:mm:ss")}","${l.user}","${getActionLabel(l.action)}","${l.resource}","${l.details || ""}"`
+      ),
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `journaux_activite_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -138,7 +100,7 @@ export function ActivityLogs() {
             Journaux d'activité
           </CardTitle>
           <CardDescription>
-            Consultez et exportez l'historique des actions du système
+            Historique des actions du système en temps réel
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -152,32 +114,21 @@ export function ActivityLogs() {
                 className="pl-9"
               />
             </div>
-            
+
             <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Type d'action" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les actions</SelectItem>
-                <SelectItem value="LOGIN">Connexions</SelectItem>
-                <SelectItem value="DOCUMENT_UPLOAD">Uploads</SelectItem>
-                <SelectItem value="DOCUMENT_VIEW">Consultations</SelectItem>
-                <SelectItem value="DOCUMENT_EDIT">Modifications</SelectItem>
-                <SelectItem value="USER_CREATED">Créations utilisateur</SelectItem>
+                <SelectItem value="upload">Uploads</SelectItem>
+                <SelectItem value="view">Consultations</SelectItem>
+                <SelectItem value="update">Modifications</SelectItem>
+                <SelectItem value="delete">Suppressions</SelectItem>
+                <SelectItem value="search">Recherches</SelectItem>
+                <SelectItem value="download">Téléchargements</SelectItem>
               </SelectContent>
             </Select>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-48 justify-start text-left font-normal", !date && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP", { locale: fr }) : "Sélectionner une date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-              </PopoverContent>
-            </Popover>
 
             <Button onClick={exportLogs} variant="outline" className="flex items-center gap-2">
               <Download className="h-4 w-4" />
@@ -185,46 +136,50 @@ export function ActivityLogs() {
             </Button>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Horodatage</TableHead>
-                  <TableHead>Utilisateur</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Ressource</TableHead>
-                  <TableHead>Adresse IP</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Détails</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="font-mono text-sm">
-                      {log.timestamp}
-                    </TableCell>
-                    <TableCell>{log.user}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {getActionLabel(log.action)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{log.resource}</TableCell>
-                    <TableCell className="font-mono text-sm">{log.ip}</TableCell>
-                    <TableCell>{getStatusBadge(log.status)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                      {log.details}
-                    </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Horodatage</TableHead>
+                    <TableHead>Utilisateur</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Ressource</TableHead>
+                    <TableHead>Détails</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {filteredLogs.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              Aucun journal ne correspond aux critères de recherche
+                </TableHeader>
+                <TableBody>
+                  {filteredLogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        Aucune activité enregistrée
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-mono text-sm">
+                          {format(new Date(log.timestamp), "dd/MM/yyyy HH:mm:ss", { locale: fr })}
+                        </TableCell>
+                        <TableCell>{log.user}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {getActionLabel(log.action)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">{log.resource}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                          {log.details}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
