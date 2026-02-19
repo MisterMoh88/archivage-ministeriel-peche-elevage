@@ -58,6 +58,18 @@ export const BasicInfoFields = ({ control, errors }: Props) => {
           <p className="text-red-500 text-sm mt-1">{errors.documentDate.message}</p>
         )}
       </div>
+
+      {/* Service émetteur */}
+      <div>
+        <Label htmlFor="issuingDepartment">Service émetteur</Label>
+        <Controller
+          name="issuingDepartment"
+          control={control}
+          render={({ field }) => (
+            <Input id="issuingDepartment" placeholder="Ex : Direction des Pêches" {...field} />
+          )}
+        />
+      </div>
     </div>
   );
 };
